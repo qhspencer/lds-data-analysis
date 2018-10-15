@@ -6,7 +6,7 @@
 	      "include": "(satan|lucifer)"}]},
  {"file": "jesus",
   "search": [{"label": "Savior",
-	      "include": "(the|our) savior"},
+	      "include": "savior"},
 	     {"label": "Jesus",
 	      "include": "jesus",
 	      "exclude": ["church of jesus christ",
