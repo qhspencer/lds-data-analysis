@@ -82,13 +82,36 @@ for search in searches:
 
 # Process references
 ref_df = get_refs(df_all)
-ref_counts = get_ref_counts(ref_df)
+
+sw_counts = get_ref_counts(ref_df)
+sw_counts.columns = sw_counts.columns.get_level_values(1)
+sw_counts.columns.name = 'Standard Work'
 
 ref_freq = ref_df.groupby('ref').count()['date'].to_frame('uses')
-top_refs = ref_freq.sort_values('uses').iloc[-20:]
+num_refs = 20
+top_refs = ref_freq.sort_values('uses').iloc[-num_refs:][::-1]
 
 
 fig, ax = pl.subplots(figsize=(12,5))
-ref_counts.plot(ax=ax)
+sw_counts.plot(ax=ax)
+ax.set_xlim([datetime.date(1971, 1, 1),
+             datetime.date(2019, 4, 1)])
+#ax.xaxis.set_minor_locator(mdates.YearLocator(1, month=4))
+#ax.xaxis.set_major_locator(mdates.YearLocator(5, month=4))
+#ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+pl.legend(sw_counts.columns, ncol=2, loc='upper left')
+pl.title('Scripture citations by standard work')
 pl.ylabel('references per conference')
 pl.savefig(output_dir + 'refs.png')
+
+
+fig, ax = pl.subplots(figsize=(12,5))
+#top_refs.plot.bar(ax=ax)
+ax.bar(range(num_refs), top_refs.values, align='center')
+ax.set_xlim([-0.5, num_refs-0.5])
+pl.xticks(range(num_refs), top_refs.index, rotation=45, ha='right')
+pl.subplots_adjust(bottom=0.25)
+pl.grid(axis='x')
+pl.title('Most-cited scriptures')
+pl.ylabel('total references')
+pl.savefig(output_dir + 'toprefs.png')
