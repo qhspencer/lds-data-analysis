@@ -1,4 +1,5 @@
 import pandas
+import datetime
 
 def replace_vals(string):
     replace_table = {u'\xa0':' ',
@@ -146,4 +147,119 @@ def get_ref_counts(ref_df):
     return sw_refs.groupby(['date', 'sw']).count()['author'].to_frame('count').unstack()
         
 
+def title_cleanup(df):
+    apostle = 'Of the Quorum of the Twelve Apostles'
+    asst = 'Assistant to the Quorum of the Twelve Apostles'
+    pres = 'President of the Church'
+    bish = 'Presiding Bishop'
+    bish1 = 'First Counselor in the Presiding Bishopric'
+    seventy = 'Of the First Quorum of the Seventy'
+    first = 'First Counselor in the First Presidency'
+    rspres = 'Relief Society General President'
+    df.loc[(df['author']=='Thomas S. Monson') &
+           (df['author_title']=='') &
+           (df['date']>datetime.date(2012, 1, 1)),
+           'author_title'] = pres
+    df.loc[(df['author']=='Russell M. Nelson') &
+           (df['author_title']=='') &
+           (df['date']>datetime.date(2018, 1, 1)),
+           'author_title'] = pres
+    df.loc[(df['author']=='Gordon B. Hinckley') &
+           (df['author_title']=='') &
+           (df['date']>datetime.date(2007, 1, 1)),
+           'author_title'] = pres
+    df.loc[(df['author']=='Gordon B. Hinckley') &
+           (df['author_title']=='') &
+           (df['date']<datetime.date(1981, 6, 1)),
+           'author_title'] = apostle
+    df.loc[(df['author']=='Joseph Fielding Smith'),
+           'author_title'] = pres
+    df.loc[(df['author']=='Harold B. Lee') &
+           (df['date']>datetime.date(1972, 6, 1)),
+           'author_title'] = pres
+    df.loc[(df['author']=='Howard W. Hunter') &
+           (df['author_title']==''),
+           'author_title'] = apostle
+    df.loc[(df['author']=='Thomas S. Monson') &
+           (df['author_title']==''),
+           'author_title'] = apostle
 
+    apostle_list = ('Marvin J. Ashton', 'Bruce R. McConkie',
+                    'LeGrand Richards', 'Delbert L. Stapley',
+                    'Mark E. Petersen', 'Richard L. Evans',
+                    'Hugh B. Brown')
+    for apo in apostle_list:
+        df.loc[df['author']==apo, 'author_title'] = apostle
+    df.loc[(df['author']=='James E. Faust') &
+           (df['author_title']=='') &
+           (df['date']>datetime.date(1978, 6, 1)),
+           'author_title'] = apostle
+    df.loc[(df['author']=='James E. Faust') &
+           (df['author_title']=='') &
+           (df['date']>datetime.date(1976, 6, 1)),
+           'author_title'] = seventy
+    df.loc[(df['author']=='James E. Faust') &
+           (df['author_title']==''),
+           'author_title'] = asst
+
+    df.loc[df['author']=='N. Eldon Tanner', 'author_title'] = first
+    df.loc[df['author']=='Marion G. Romney', 'author_title'] = apostle
+    # Romney 1st pres
+    df.loc[(df['author']=='David B. Haight') &
+           (df['author_title']==''), 'author_title'] = asst
+
+    seventy_list = ('A. Theodore Tuttle', 'Paul H. Dunn',
+                    'Loren C. Dunn', 'Vaughn J. Featherstone',
+                    'Hartman Rector, Jr.', 'Franklin D. Richards',
+                    'Marion D. Hanks', 'Rex D. Pinegar', 'Robert L. Simpson',
+                    'J. Thomas Fyans', 'Carlos E. Asay', 'S. Dilworth Young',
+                    'Dean L. Larsen', 'W. Grant Bangerter',
+                    'Adney Y. Komatsu', 'Robert L. Backman',
+                    'Charles A. Didier', 'Jacob de Jager')
+    for sev in seventy_list:
+        df.loc[df['author']==sev, 'author_title'] = seventy
+    # add pres. bish. for featherstone
+
+    df.loc[df['author']=='Barbara B. Smith', 'author_title'] = rspres
+    df.loc[df['author']=='Elaine L. Jack', 'author_title'] = rspres
+
+    df.loc[df['author']=='Victor L. Brown', 'author_title'] = bish
+    df.loc[df['author']=='H. Burke Peterson', 'author_title'] = bish1
+    df.loc[(df['author']=='H. Burke Peterson') &
+           (df['date']>datetime.date(1985, 6, 1)),
+           'author_title'] = seventy
+
+    # Many more to go still ...
+    return df
+
+def get_current_president(df):
+    presidents = df[df['author_title']==
+                              'President of the Church'].groupby('date').max()['author'].to_frame('president')
+
+    swk = pandas.DataFrame({'date':['1979-04-01', '1981-10-01', '1983-04-01',
+                                    '1983-10-01', '1984-04-01', '1984-10-01',
+                                    '1985-10-01'],
+                            'president':'Spencer W. Kimball'})
+    etb = pandas.DataFrame({'date':['1990-04-01', '1990-10-01', '1991-04-01',
+                                    '1991-10-01', '1992-04-01', '1992-10-01',
+                                    '1993-04-01', '1993-10-01', '1994-04-01'],
+                            'president':'Ezra Taft Benson'})
+    tsm = pandas.DataFrame({'date':['2017-10-01'],
+                            'president':'Thomas S. Monson'})
+    new = pandas.concat((swk, etb, tsm))
+    new['date'] = pandas.to_datetime(new['date'])
+
+    return pandas.concat((presidents, new.set_index('date'))).sort_index()
+
+def get_only_talks(df):
+    exclude_list = (
+        'Sustaining of Church Officers',
+        'The Church Audit Committee Report',
+        'Church Finance Committee Report',
+        'Church Auditing Department Report',
+        'Church Auditing Committee Report',
+        'Statistical Report'
+        )
+
+    return df[df['title'].str.contains(
+        '|'.join(exclude_list))==False]

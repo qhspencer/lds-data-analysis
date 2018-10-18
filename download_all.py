@@ -10,7 +10,7 @@ from data_utils import *
 
 enc = json.JSONEncoder()
 url_base = 'https://www.lds.org'
-for year in range(1980, 2019):
+for year in range(1971, 2019):
     for month in range(4, 11, 6):
         print 'loading', year, month
         url = '{0}/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)

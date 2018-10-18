@@ -23,5 +23,8 @@
 	      "include": "moral agency"}]},
  {"file": "tm",
   "search": [{"label": "tender mercy",
-	      "include": "tender (mercy|mercies)"}]
- }]
+	      "include": "tender (mercy|mercies)"}]},
+ {"file": "titles",
+  "search": [{"label": "President",
+	      "include": "president"}]}
+]
