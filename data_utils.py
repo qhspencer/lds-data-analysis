@@ -17,6 +17,27 @@ def clean_join_strings(strings):
     return ' '.join(clean_strings(strings)).strip()
 
 
+clean_author_dict = {
+    '^(President|Elder|Bishop|Sister|Brother) ': '',
+    '.* Grant Bangerter': 'W. Grant Bangerter',
+    'Wm.': 'William',
+    'Elaine Cannon':'Elaine A. Cannon',
+    'Charles Didier':'Charles A. Didier',
+    'Jose L. Alonso':u'Jos\xe9 L. Alonso',
+    'H Goaslind':'H. Goaslind',
+    '^H. Goaslind':'Jack H. Goaslind',
+    'Goaslind$':'Goaslind, Jr.',
+    'Larry Echo Hawk':'Larry J. Echo Hawk',
+    'Ardeth Greene Kapp': 'Ardeth G. Kapp',
+    'William Rolfe Kerr': 'W. Rolfe Kerr',
+    '^O. Samuelson': 'Cecil O. Samuelson',
+    'Mary Ellen Smoot': 'Mary Ellen W. Smoot',
+    'Ellen W. Smoot': 'Mary Ellen W. Smoot',
+    'Michael J. Teh':'Michael John U. Teh',
+    'Teddy E. Brewerton':'Ted E. Brewerton',
+    'of the Church':'Gordon B. Hinckley'}
+
+
 def get_refs(all_data):
     # Retrieve from body text using regular expression and create new dataframe
     refs = all_data['scripture_references']
@@ -83,7 +104,7 @@ def get_refs(all_data):
         'Rev ':'Rev.'}
 
     rdf = rdf.replace({'ref':replace}, regex=True)
-    ref_df = rdf.reset_index(0).join(all_data, on='level_0')[['date', 'author', 'ref']]
+    ref_df = rdf.reset_index(0).join(all_data, on='level_0')[['date', 'year', 'author', 'ref']]
 
     # strip extra characters from references and delete things that don't look like references
     ref_df['ref'] = ref_df['ref'].str.rstrip('.:;])')
@@ -140,12 +161,12 @@ def get_refs(all_data):
 #ref_df['len'] = ref_df['ref'].str.len()
 
 
-def get_ref_counts(ref_df):
+def get_ref_counts(ref_df, group):
     swlist = ['OT', 'NT', 'BoM', 'D&C', 'PGP']
 
     sw_refs = ref_df[ref_df['sw'].isin(swlist)]
-    return sw_refs.groupby(['date', 'sw']).count()['author'].to_frame('count').unstack()
-        
+    return sw_refs.groupby([group, 'sw']).count()['author'].to_frame('count').unstack()
+
 
 def title_cleanup(df):
     apostle = 'Of the Quorum of the Twelve Apostles'
