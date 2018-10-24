@@ -52,6 +52,9 @@ pres = get_current_president(df_all)
 df_all = df_all.join(pres, 'date')
 #df_all['tail'] = df_all['body'].str[-31:].str.lower()
 
+talks_only = get_only_talks(df_all)
+talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
+
 #for search in [searches[2]]:
 for search in searches:
     print 'running search:', search['search']
@@ -63,17 +66,17 @@ for search in searches:
 
     for s in search['search']:
         if cs:
-            matches = df_all['body'].str.count(s['include'])
+            matches = talks_only['body'].str.count(s['include'])
         else:
-            matches = df_all['body'].str.lower().str.count(s['include'])
+            matches = talks_only['body'].str.lower().str.count(s['include'])
         if 'exclude' in s.keys():
             for excl_str in s['exclude']:
                 if cs:
-                    matches -= df_all['body'].str.count(excl_str)
+                    matches -= talks_only['body'].str.count(excl_str)
                 else:
-                    matches -= df_all['body'].str.lower().str.count(excl_str)
+                    matches -= talks_only['body'].str.lower().str.count(excl_str)
 
-        results[s['label']] = df_all.assign(matches=matches).groupby(group).sum()['matches']
+        results[s['label']] = talks_only.assign(matches=matches).groupby(group).sum()['matches']
 
     fig, ax = pl.subplots(figsize=(12,5))
     results.plot(ax=ax)
@@ -137,19 +140,18 @@ pl.savefig(output_dir + 'quotes.png')
 
 
 fig, ax = pl.subplots(figsize=(12,5))
-talks_only = get_only_talks(df_all)
 pres_df = talks_only['date'].to_frame('date')
 president_list = talks_only['president'].unique().tolist()
 dead_pres_list = ['Joseph Smith', 'Brigham Young', 'John Taylor',
-                  'Wilford Woodruf', 'Lorenzo Snow',
+                  'Wilford Woodruff', 'Lorenzo Snow',
                   'Joseph F. Smith', 'Heber J. Grant',
                   'George Albert Smith', 'David O. McKay']
 for pres in president_list + dead_pres_list:
-    pres_df[pres] = talks_only['body'].str.count(pres)
+    pres_df[pres] = talks_only['body'].str.count(pres)>0
     if pres == 'Joseph Smith':
-        pres_df[pres] += talks_only['body'].str.count('Prophet Joseph')
+        pres_df[pres] |= talks_only['body'].str.count('Prophet Joseph')>0
     elif 'Smith' not in pres:
-        pres_df[pres] += talks_only['body'].str.count('President ' + pres.split(' ')[-1])
+        pres_df[pres] |= talks_only['body'].str.count('President ' + pres.split(' ')[-1])>0
 pres_refs = pres_df.groupby('date').sum()
 if group == 'year':
     prplot = pres_refs.reset_index().assign(year=pres_refs.reset_index()['date'].dt.year).groupby('year').sum()
@@ -169,7 +171,7 @@ for pres in president_list + dead_pres_list:
         s = sum(pres_refs[pres])/float(len(pres_refs.index.unique()))
     else:
         pres_start = min(talks_only[talks_only['president']==pres]['date'])
-        pres_end = max(talks_only[talks_only['president']==pres]['date'])
+        pres_end = max(talks_only[talks_only['president']==pres]['date'])+datetime.timedelta(200)
         n_confs = sum(pres_refs.index>pres_end)
         if n_confs:
             s = sum(pres_refs[pres_refs.index>pres_end][pres])/float(n_confs)
@@ -189,6 +191,45 @@ pl.title('Most mentioned prophets after death')
 pl.ylabel('average reference per conference')
 pl.savefig(output_dir + 'toppres.png')
 
+
+#################################################
+pres_cites_all = []
+for pres in president_list[:-1]:
+    pres_start = min(talks_only[talks_only['president']==pres]['date'])
+    pres_end = max(talks_only[talks_only['president']==pres]['date'])
+    confs_during = (pres_refs.index <= pres_end) & (pres_refs.index >= pres_start)
+    confs_post = pres_refs.index > pres_end + datetime.timedelta(200)
+    nc_post = sum(confs_post)
+    pres_cites_all.append(
+        [pres,
+         sum(pres_refs[confs_during][pres])/float(sum(confs_during)),
+         sum(pres_refs[confs_post][pres])/float(nc_post) if nc_post else 0])
+ps_all = pandas.DataFrame(
+    pres_cites_all,
+    columns=('pres', 'cites_during', 'cites_post')).set_index('pres')
+#################################################
+
+#####
+# Kimball
+pres = '(Spencer W. Kimball|President Kimball|Spencer Kimball)'
+book = "Miracle of Forgiveness"
+kimb_refs = talks_only.date.to_frame('date')
+kimb_refs['year'] = talks_only.year
+kimb_refs['name references'] = talks_only.body.str.count(pres)>0
+talk_refs = talks_only.body.str.contains(book)
+ref_refs = talks_only.references.map(lambda x: any(book in y for y in x))
+kimb_refs['book references'] = talk_refs | ref_refs
+kimb_results = kimb_refs.groupby(group).sum()[['name references', 'book references']]
+
+fig, ax = pl.subplots(figsize=(12,5))
+kimb_results.plot(ax=ax)
+ax.set_xlim(daterange)
+pl.grid(axis='y')
+pl.title('Spencer W. Kimball references')
+pl.ylabel('number per year')
+pl.savefig(output_dir + 'kimball.png')
+
+#####
 
 quote_words = talks_only.body.str.findall(u'(\u201c[^\u201d]*\u201d)').map(lambda x: len(' '.join(x).split(' ')))
 all_words = talks_only.body.map(lambda x:len(x.split(' ')))
@@ -217,6 +258,45 @@ pl.savefig(output_dir + 'talks_conf.png')
 
 
 ###
-all_apostles = talks_only[(talks_only['author_title'].str.contains('Twelve')) |
-                          (talks_only['author_title']=='President of the Church')]['author'].unique()
+recent_apostles = talks_only[(talks_only['author_title'].str.contains('Twelve')) |
+                             (talks_only['author_title']=='President of the Church')]['author'].unique()
 
+all_apostles = list(set(recent_apostles.tolist() + list(prior_apostles)) -
+                    set(president_list+dead_pres_list))
+
+apo_counts = []
+for apo in all_apostles:
+    all_citations = talks_only.body.str.count(apo)>0
+    cite_count = talks_only[all_citations].groupby('date').count()['year']
+    if apo in talks_only.author.unique():
+        first_talk = min(talks_only[talks_only['author']==apo]['date'])
+        last_talk = max(talks_only[talks_only['author']==apo]['date'])
+        cites_all = cite_count.index >= first_talk
+        cites_post = cite_count.index > last_talk+datetime.timedelta(200)
+        all_ratio = sum(cite_count)/float(len(talk_counts[talk_counts.index>=first_talk]))
+        n_confs = sum(talk_counts.index>last_talk+datetime.timedelta(200))
+        post_ratio = sum(cites_post)/float(n_confs)
+    else:
+        all_ratio = sum(cite_count)/float(len(talk_counts))
+        post_ratio = all_ratio
+
+    apo_counts.append([apo, all_ratio, post_ratio])
+
+apo_cites = pandas.DataFrame(apo_counts, columns=('name', 'all', 'post')).fillna(0)
+all_cites = ps.append(apo_cites[apo_cites.post>0.5][['name','post']].set_index('name')).fillna(0)
+all_cites['total']=all_cites.sum(1)
+ac_final = all_cites.sort_values('total', ascending=False).drop('total', 1)
+ac_final.columns = ('Presidents', 'Apostles')
+
+fig, ax = pl.subplots(figsize=(12,5))
+ac_final = ac_final[1:]
+ax.bar(range(len(ac_final)), ac_final.Presidents, color='#d62728', align='center')
+ax.bar(range(len(ac_final)), ac_final.Apostles, bottom=ac_final.Presidents, align='center')
+ax.set_xlim([-0.5, len(ac_final)-0.5])
+pl.xticks(range(len(ac_final)), ac_final.index, rotation=45, ha='right')
+pl.subplots_adjust(bottom=0.30)
+pl.grid(axis='x')
+pl.legend(ac_final.columns)
+pl.title('Posthumous mentions of past leaders')
+pl.ylabel('average references per conference')
+pl.savefig(output_dir + 'influencers.png')
