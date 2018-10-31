@@ -13,6 +13,7 @@ import matplotlib.pyplot as pl
 #pl.style.use('fivethirtyeight')
 pl.style.use('bmh')
 import matplotlib.dates as mdates
+pl.rcParams['figure.max_open_warning'] = 50
 
 search_file = 'search_data.json'
 output_dir = '/mnt/d/Quentin/'
@@ -20,7 +21,7 @@ output_dir = '/mnt/d/Quentin/'
 print "Loading data"
 searches = json.load(open(search_file))
 
-if 0:
+if 1:
     group = 'year'
     daterange = [1971, 2019]
     yaxis_str = 'uses per year'
@@ -55,45 +56,9 @@ df_all = df_all.join(pres, 'date')
 talks_only = get_only_talks(df_all)
 talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
 
-#for search in [searches[2]]:
-for search in searches:
-    print 'running search:', search['search']
-    if 'case sensitive' in search.keys() and search['case sensitive']=='true':
-        cs = True
-    else:
-        cs = False
-    results = pandas.DataFrame()
-
-    for s in search['search']:
-        if cs:
-            matches = talks_only['body'].str.count(s['include'])
-        else:
-            matches = talks_only['body'].str.lower().str.count(s['include'])
-        if 'exclude' in s.keys():
-            for excl_str in s['exclude']:
-                if cs:
-                    matches -= talks_only['body'].str.count(excl_str)
-                else:
-                    matches -= talks_only['body'].str.lower().str.count(excl_str)
-
-        results[s['label']] = talks_only.assign(matches=matches).groupby(group).sum()['matches']
-
-    fig, ax = pl.subplots(figsize=(12,5))
-    results.plot(ax=ax)
-    #ax.bar(results.index, results, width=120)
-
-    #ax.xaxis.set_minor_locator(mdates.YearLocator(1, month=3))
-    #ax.xaxis.set_major_locator(mdates.YearLocator(5, month=3))
-    #ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-
-    ax.set_xlim(daterange)
-    pl.ylabel(yaxis_str)
-    #pl.title('Uses of "{0:s}"'.format(search['include']))
-    pl.savefig(output_dir + search['file'] + '.png')
-
 
 # Process references
-ref_df = get_refs(df_all)
+ref_df = get_scripture_refs(df_all)
 
 sw_counts = get_ref_counts(ref_df, group)
 sw_counts.columns = sw_counts.columns.get_level_values(1)
@@ -261,11 +226,14 @@ pl.savefig(output_dir + 'talks_conf.png')
 recent_apostles = talks_only[(talks_only['author_title'].str.contains('Twelve')) |
                              (talks_only['author_title']=='President of the Church')]['author'].unique()
 
-all_apostles = list(set(recent_apostles.tolist() + list(prior_apostles)) -
-                    set(president_list+dead_pres_list))
+all_q15 = list(set(recent_apostles.tolist() + list(prior_apostles) +
+                   president_list + dead_pres_list))
+
+all_q12 = list(set(recent_apostles.tolist() + list(prior_apostles)) -
+               set(president_list + dead_pres_list))
 
 apo_counts = []
-for apo in all_apostles:
+for apo in all_q12:
     all_citations = talks_only.body.str.count(apo)>0
     cite_count = talks_only[all_citations].groupby('date').count()['year']
     if apo in talks_only.author.unique():
@@ -300,3 +268,21 @@ pl.legend(ac_final.columns)
 pl.title('Posthumous mentions of past leaders')
 pl.ylabel('average references per conference')
 pl.savefig(output_dir + 'influencers.png')
+
+
+#####
+
+def get_other_refs(text):
+    return [a for a in all_q15 if a in text]
+
+talks_only = talks_only.assign(all_refs=talks_only.body.map(get_other_refs))
+refs_tmp = talks_only.all_refs.apply(pandas.Series).stack().to_frame('ref')
+all_refs = refs_tmp.reset_index(0).join(talks_only, on='level_0')[['date', 'year', 'author', 'ref']]
+ref_counts = all_refs.groupby(['author', 'ref']).count()['date'].to_frame('ref_count')
+talk_counts = talks_only.author.value_counts().to_frame('talk_count')
+talk_counts.index.name = 'author'
+ref_counts = ref_counts.join(talk_counts)
+ref_ratio = (ref_counts.ref_count/ref_counts.talk_count).to_frame('ratio').reset_index()
+ref_ratio_q15 = ref_ratio[ref_ratio.author.isin(all_q15)]
+
+

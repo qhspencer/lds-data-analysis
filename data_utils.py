@@ -134,7 +134,7 @@ clean_author_dict = {
     'of the Church':'Gordon B. Hinckley'}
 
 
-def get_refs(all_data):
+def get_scripture_refs(all_data):
     # Retrieve from body text using regular expression and create new dataframe
     refs = all_data['scripture_references']
     rdf = refs.apply(pandas.Series).stack().to_frame('ref')
@@ -375,6 +375,7 @@ def get_only_talks(df):
         'Church Finance Committee Report',
         'Church Auditing Department Report',
         'Church Auditing Committee Report',
+        'Church Officers Sustained',
         'Statistical Report',
         'Solemn Assembly'
         )
