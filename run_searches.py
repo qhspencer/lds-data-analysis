@@ -31,30 +31,12 @@ else:
                  datetime.date(2019, 4, 1)]
     yaxis_str = 'uses per conference'
 
-dfs = []
-for file in glob.glob('data/*.json'):
-    dfs.append(pandas.read_json(file))
 
-df_all = pandas.concat(dfs).reset_index()
-
-# Create date column
-df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str))
-df_all['year'] = df_all['date'].dt.year
-
-# Clean up strings:
-# standardize author names and remove titles
-# remove or replace unneeded characters in body
-df_all = df_all.replace(
-    {'author': clean_author_dict,
-     'body': {'\t|\n':'', u'\u2013':'-'}}, regex=True)
-
-df_all = title_cleanup(df_all)
-pres = get_current_president(df_all)
-df_all = df_all.join(pres, 'date')
-#df_all['tail'] = df_all['body'].str[-31:].str.lower()
-
+df_all = load_data()
 talks_only = get_only_talks(df_all)
 talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
+#df_all['tail'] = df_all['body'].str[-31:].str.lower()
+
 
 #for search in [searches[2]]:
 for search in searches:

@@ -15,11 +15,9 @@ pl.style.use('bmh')
 import matplotlib.dates as mdates
 pl.rcParams['figure.max_open_warning'] = 50
 
-search_file = 'search_data.json'
 output_dir = '/mnt/d/Quentin/'
 
 print "Loading data"
-searches = json.load(open(search_file))
 
 if 1:
     group = 'year'
@@ -31,28 +29,7 @@ else:
                  datetime.date(2019, 4, 1)]
     yaxis_str = 'uses per conference'
 
-dfs = []
-for file in glob.glob('data/*.json'):
-    dfs.append(pandas.read_json(file))
-
-df_all = pandas.concat(dfs).reset_index()
-
-# Create date column
-df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str))
-df_all['year'] = df_all['date'].dt.year
-
-# Clean up strings:
-# standardize author names and remove titles
-# remove or replace unneeded characters in body
-df_all = df_all.replace(
-    {'author': clean_author_dict,
-     'body': {'\t|\n':'', u'\u2013':'-'}}, regex=True)
-
-df_all = title_cleanup(df_all)
-pres = get_current_president(df_all)
-df_all = df_all.join(pres, 'date')
-#df_all['tail'] = df_all['body'].str[-31:].str.lower()
-
+df_all = load_data()
 talks_only = get_only_talks(df_all)
 talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
 
@@ -284,5 +261,57 @@ talk_counts.index.name = 'author'
 ref_counts = ref_counts.join(talk_counts)
 ref_ratio = (ref_counts.ref_count/ref_counts.talk_count).to_frame('ratio').reset_index()
 ref_ratio_q15 = ref_ratio[ref_ratio.author.isin(all_q15)]
+
+
+###########
+#import nltk
+words = talks_only.body.str.lower().str.findall(u'[a-z\u2019]+').apply(pandas.Series).stack()
+words = words.str.replace(u'\u2019s', '').to_frame('words')
+
+skipwords = (
+    u'the', u'of', u'and', u'to', u'in', u'a', u'that', u'i', u'we', u'is',
+    u'for', u'he', u'you', u'our', u'his', u'be', u'it', u'as', u'are',
+    u'with', u'have', u'this', u'was', u'not', u'will', u'they', u'all',
+    u'my', u'us', u'who', u'by', u'on', u'their', u'from',
+    u'but', u'your', u'when', u'or', u'one', u'them',
+    u'him', u'which', u'had', u'can', u'do', u'me', u'has',
+    u'there', u'what', u'were', u'if', u'would', u'so', u'at',
+    u'an', u'said', u'those', u'may', u'been', u'know', u'these',
+    u'her', u'more', u'shall', u'no', u'many', u'unto',
+    u'come', u'she', u'then', u'how', u'through', u'upon',
+    u'into', u'ye', u'than', u'also', u'up', u'could')
+
+words = words[~words.words.isin(' '.join(all_q15).lower().split(' '))]
+words = words[~words.words.isin(skipwords)]
+wordyear = words.reset_index(0).join(talks_only, on='level_0')[['year', 'words']]
+
+wordfreq_1970 = wordyear[wordyear.year<1980]['words'].value_counts().to_frame('count')
+wordfreq_1980 = wordyear[(wordyear.year>=1980) & (wordyear.year<1990)]['words'].value_counts().to_frame('count')
+wordfreq_1990 = wordyear[(wordyear.year>=1990) & (wordyear.year<2000)]['words'].value_counts().to_frame('count')
+wordfreq_2000 = wordyear[(wordyear.year>=2000) & (wordyear.year<2010)]['words'].value_counts().to_frame('count')
+wordfreq_2010 = wordyear[(wordyear.year>=2010)]['words'].value_counts().to_frame('count')
+wordfreq_1970['rank'] = wordfreq_1970.reset_index().index
+wordfreq_1980['rank'] = wordfreq_1980.reset_index().index
+wordfreq_1990['rank'] = wordfreq_1990.reset_index().index
+wordfreq_2000['rank'] = wordfreq_2000.reset_index().index
+wordfreq_2010['rank'] = wordfreq_2010.reset_index().index
+
+wordfreq_all = wordfreq_1970.join(wordfreq_1980, how='inner', lsuffix='1970', rsuffix='1980')
+wordfreq_all = wordfreq_all.join(wordfreq_1990, how='inner', rsuffix='1990')
+wordfreq_all = wordfreq_all.join(wordfreq_2000, how='inner', rsuffix='2000')
+wordfreq_all = wordfreq_all.join(wordfreq_2010, how='inner', rsuffix='2010')
+wordfreq_all.columns = ['count1970', 'rank1970', 'count1980', 'rank1980',
+                        'count1990', 'rank1990', 'count2000', 'rank2000',
+                        'count2010', 'rank2010']
+wordfreq_ranks = wordfreq_all[['rank1970', 'rank1980', 'rank1990', 'rank2000', 'rank2010']]
+wordfreq_counts = wordfreq_all[['count1970', 'count1980', 'count1990', 'count2000', 'count2010']]
+
+wordfreq_delta = wordfreq_ranks.subtract(wordfreq_ranks.mean(1), 0)
+wordfreq_delta_norm = (wordfreq_delta.abs().max(1)/wordfreq_delta.reset_index().index).sort_values(ascending=False)
+significant_changes = wordfreq_delta_norm[:20]
+
+common_words = wordfreq_counts.mean(1).sort_values()[::-1][:2000].index
+wfc_common = wordfreq_counts.loc[common_words]
+change_ratio = wfc_common.count1970.divide(wfc_common.count2010, 1).sort_values()x
 
 

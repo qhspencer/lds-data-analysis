@@ -17,6 +17,52 @@ def clean_join_strings(strings):
     return ' '.join(clean_strings(strings)).strip()
 
 
+clean_author_dict = {
+    '^(President|Elder|Bishop|Sister|Brother) ': '',
+    '.* Grant Bangerter': 'W. Grant Bangerter',
+    'Wm.': 'William',
+    'Elaine Cannon':'Elaine A. Cannon',
+    'Charles Didier':'Charles A. Didier',
+    'Jose L. Alonso':u'Jos\xe9 L. Alonso',
+    'H Goaslind':'H. Goaslind',
+    '^H. Goaslind':'Jack H. Goaslind',
+    'Goaslind$':'Goaslind, Jr.',
+    'Larry Echo Hawk':'Larry J. Echo Hawk',
+    'Ardeth Greene Kapp': 'Ardeth G. Kapp',
+    'William Rolfe Kerr': 'W. Rolfe Kerr',
+    '^O. Samuelson': 'Cecil O. Samuelson',
+    'Mary Ellen Smoot': 'Mary Ellen W. Smoot',
+    'Ellen W. Smoot': 'Mary Ellen W. Smoot',
+    'Michael J. Teh':'Michael John U. Teh',
+    'Teddy E. Brewerton':'Ted E. Brewerton',
+    'of the Church':'Gordon B. Hinckley'}
+
+
+def load_data():
+    dfs = []
+    for file in glob.glob('data/*.json'):
+        dfs.append(pandas.read_json(file))
+
+    df_all = pandas.concat(dfs).reset_index()
+    df_all.body = df_all.body.map(lambda x: ' '.join(x))
+
+    # Create date column
+    df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str))
+    df_all['year'] = df_all['date'].dt.year
+
+    # Clean up strings:
+    # standardize author names and remove titles
+    # remove or replace unneeded characters in body
+    df_all = df_all.replace(
+        {'author': clean_author_dict,
+         'body': {'\t|\n':'', u'\u2013':'-'}}, regex=True)
+    df_all = title_cleanup(df_all)
+
+    pres = get_current_president(df_all)
+    df_all = df_all.join(pres, 'date')
+
+    return df_all
+
 prior_apostles = (
     'Thomas B. Marsh',
     'David W. Patten',
@@ -112,26 +158,6 @@ prior_apostles = (
     'Henry B. Eyring')
 
 
-
-clean_author_dict = {
-    '^(President|Elder|Bishop|Sister|Brother) ': '',
-    '.* Grant Bangerter': 'W. Grant Bangerter',
-    'Wm.': 'William',
-    'Elaine Cannon':'Elaine A. Cannon',
-    'Charles Didier':'Charles A. Didier',
-    'Jose L. Alonso':u'Jos\xe9 L. Alonso',
-    'H Goaslind':'H. Goaslind',
-    '^H. Goaslind':'Jack H. Goaslind',
-    'Goaslind$':'Goaslind, Jr.',
-    'Larry Echo Hawk':'Larry J. Echo Hawk',
-    'Ardeth Greene Kapp': 'Ardeth G. Kapp',
-    'William Rolfe Kerr': 'W. Rolfe Kerr',
-    '^O. Samuelson': 'Cecil O. Samuelson',
-    'Mary Ellen Smoot': 'Mary Ellen W. Smoot',
-    'Ellen W. Smoot': 'Mary Ellen W. Smoot',
-    'Michael J. Teh':'Michael John U. Teh',
-    'Teddy E. Brewerton':'Ted E. Brewerton',
-    'of the Church':'Gordon B. Hinckley'}
 
 
 def get_scripture_refs(all_data):
