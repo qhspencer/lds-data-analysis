@@ -17,18 +17,21 @@ pl.rcParams['figure.max_open_warning'] = 50
 
 search_file = 'search_data.json'
 output_dir = '/mnt/d/Quentin/'
+time_axis = 'conf'
 
 print "Loading data"
 searches = json.load(open(search_file))
 
-if 1:
+first_year = 1971
+last_year = datetime.date.today().year #+ 1
+if time_axis == 'year':
     group = 'year'
-    daterange = [1971, 2019]
+    daterange = [first_year, last_year]
     yaxis_str = 'uses per year'
-else:
+elif time_axis == 'conf':
     group = 'date'
-    daterange = [datetime.date(1971, 1, 1),
-                 datetime.date(2019, 4, 1)]
+    daterange = [datetime.date(first_year, 1, 1),
+                 datetime.date(last_year, 4, 1)]
     yaxis_str = 'uses per conference'
 
 
@@ -75,6 +78,7 @@ for search in searches:
 
     ax.set_xlim(daterange)
     pl.ylabel(yaxis_str)
-    #pl.title('Uses of "{0:s}"'.format(search['include']))
+    if 'title' in search.keys():
+        pl.title(search['title'])
     pl.savefig(output_dir + search['file'] + '.png')
 

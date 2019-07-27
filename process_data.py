@@ -312,6 +312,6 @@ significant_changes = wordfreq_delta_norm[:20]
 
 common_words = wordfreq_counts.mean(1).sort_values()[::-1][:2000].index
 wfc_common = wordfreq_counts.loc[common_words]
-change_ratio = wfc_common.count1970.divide(wfc_common.count2010, 1).sort_values()x
+change_ratio = wfc_common.count1970.divide(wfc_common.count2010, 1).sort_values()
 
 
