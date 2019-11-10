@@ -22,6 +22,10 @@ parser.add_argument('--search-data', dest='search_data', type=str, default='sear
                     help='JSON file containing search data')
 parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
                     choices=['year', 'conf'], help='specifies spacing of time axis')
+parser.add_argument('--norm', dest='norm', type=str, default='conf',
+                    choices=['words', 'conf'], help='specifies normalization factor')
+parser.add_argument('--smooth', dest='smooth', type=int, default=None,
+                    help='size of window for smoothing')
 args = parser.parse_args()
 
 # This needs to be set high if a large number of plots are being generated
@@ -29,24 +33,24 @@ pl.rcParams['figure.max_open_warning'] = 50
 pl.style.use(args.mpl_style)
 
 search_file = args.search_data
-output_dir = args.output_dir
-time_axis = 'year'
+output_dir = args.output_dir + '/'
 
 print "Loading data"
 searches = json.load(open(search_file))
 
 first_year = 1971
 last_year = datetime.date.today().year + 1
-if time_axis == 'year':
+if args.time_axis == 'year':
     group = 'year'
     daterange = [first_year, last_year]
     yaxis_str = 'uses per year'
-elif time_axis == 'conf':
+elif args.time_axis == 'conf':
     group = 'date'
     daterange = [datetime.date(first_year, 1, 1),
                  datetime.date(last_year, 4, 1)]
     yaxis_str = 'uses per conference'
-
+if args.norm == 'words':
+    yaxis_str = 'uses per million words'
 
 df_all = load_data()
 talks_only = get_only_talks(df_all)
@@ -76,12 +80,25 @@ for search in searches:
             l = s['label']
         else:
             l = s['include']
-        results[l] = talks_only.assign(matches=matches).groupby(group).sum()['matches']
+        if args.norm == 'conf':
+            results[l] = talks_only.assign(matches=matches).groupby(group).sum()['matches']
+        else:
+            sums = talks_only.assign(matches=matches).groupby(group).sum()
+            results[l] = sums['matches']/sums['word_count']*1e6
+
+    if 'include sum' in search.keys() and search['include sum']=='true':
+        results['all combined'] = results.sum(1)
 
     fig, ax = pl.subplots(figsize=(12,5))
-    results.plot(ax=ax)
+    if args.smooth==None:
+        results.plot(ax=ax)
+    else:
+        results.rolling(args.smooth, min_periods=1, center=True).mean().plot(ax=ax)
 
     ax.set_xlim(daterange)
+    if 'start year' in search.keys():
+        ax.set_xlim(left=datetime.date(search['start year'], 4, 1))
+    ax.set_ylim(bottom=0)
     pl.ylabel(yaxis_str)
     if 'title' in search.keys():
         pl.title(search['title'])

@@ -5,29 +5,45 @@ import os
 import glob
 import json
 import datetime
+import argparse
 from data_utils import *
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as pl
-#pl.style.use('fivethirtyeight')
-pl.style.use('bmh')
 import matplotlib.dates as mdates
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mpl-style', dest='mpl_style', type=str, default='bmh',
+                    choices=['bmh', 'fivethirtyeight'], help='style package for matplotlib plots')
+parser.add_argument('--output-dir', dest='output_dir', type=str, default='.',
+                    help='path for saving output files')
+parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
+                    choices=['year', 'conf'], help='specifies spacing of time axis')
+parser.add_argument('--norm', dest='norm', type=str, default='conf',
+                    choices=['words', 'conf'], help='specifies normalization factor')
+args = parser.parse_args()
+
+# This needs to be set high if a large number of plots are being generated
 pl.rcParams['figure.max_open_warning'] = 50
+pl.style.use(args.mpl_style)
 
-output_dir = '/mnt/d/Quentin/'
-
+output_dir = args.output_dir + '/'
 print "Loading data"
 
-if 1:
+first_year = 1971
+last_year = datetime.date.today().year + 1
+if args.time_axis == 'year':
     group = 'year'
-    daterange = [1971, 2019]
+    daterange = [first_year, last_year]
     yaxis_str = 'uses per year'
-else:
+elif args.time_axis == 'conf':
     group = 'date'
-    daterange = [datetime.date(1971, 1, 1),
-                 datetime.date(2019, 4, 1)]
+    daterange = [datetime.date(first_year, 1, 1),
+                 datetime.date(last_year, 4, 1)]
     yaxis_str = 'uses per conference'
+if args.norm == 'words':
+    yaxis_str = 'uses per million words'
 
 df_all = load_data()
 talks_only = get_only_talks(df_all)
@@ -38,6 +54,11 @@ talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
 ref_df = get_scripture_refs(df_all)
 
 sw_counts = get_ref_counts(ref_df, group)
+if args.norm == 'words':
+    sw_counts = sw_counts.divide(talks_only.groupby(group).sum()['word_count'], 0)*1e6
+    ylabel = 'references per million words'
+else:
+    ylabel = 'references per conference'
 sw_counts.columns = sw_counts.columns.get_level_values(1)
 sw_counts.columns.name = 'Standard Work'
 
@@ -46,21 +67,24 @@ num_refs = 20
 top_refs = ref_freq.sort_values('uses').iloc[-num_refs:][::-1]
 
 
+#######################################
 fig, ax = pl.subplots(figsize=(12,5))
-sw_counts.plot(ax=ax)
+#sw_counts.plot(ax=ax)
+sw_counts.rolling(5, min_periods=1, center=True).mean().plot(ax=ax)
 ax.set_xlim(daterange)
 #ax.xaxis.set_minor_locator(mdates.YearLocator(1, month=4))
 #ax.xaxis.set_major_locator(mdates.YearLocator(5, month=4))
 #ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 pl.legend(sw_counts.columns, ncol=2, loc='upper left')
 pl.title('Scripture citations by standard work')
-pl.ylabel('references per conference')
+pl.ylabel(ylabel)
 pl.savefig(output_dir + 'refs.png')
 
 
+#######################################
 fig, ax = pl.subplots(figsize=(12,5))
 #top_refs.plot.bar(ax=ax)
-ax.bar(range(num_refs), top_refs.values, align='center')
+ax.bar(range(num_refs), top_refs['uses'], align='center')
 ax.set_xlim([-0.5, num_refs-0.5])
 pl.xticks(range(num_refs), top_refs.index, rotation=45, ha='right')
 pl.subplots_adjust(bottom=0.25)
@@ -70,6 +94,7 @@ pl.ylabel('total references')
 pl.savefig(output_dir + 'toprefs.png')
 
 
+#######################################
 fig, ax = pl.subplots(figsize=(12,5))
 quotes = df_all['body'].str.count(u'\u201d')
 scriptures = df_all['scripture_references'].map(len)
@@ -81,6 +106,7 @@ pl.title('quotes per talk')
 pl.savefig(output_dir + 'quotes.png')
 
 
+#######################################
 fig, ax = pl.subplots(figsize=(12,5))
 pres_df = talks_only['date'].to_frame('date')
 president_list = talks_only['president'].unique().tolist()
@@ -113,7 +139,7 @@ for pres in president_list + dead_pres_list:
         s = sum(pres_refs[pres])/float(len(pres_refs.index.unique()))
     else:
         pres_start = min(talks_only[talks_only['president']==pres]['date'])
-        pres_end = max(talks_only[talks_only['president']==pres]['date'])+datetime.timedelta(200)
+        pres_end = max(talks_only[talks_only['president']==pres]['date']) + datetime.timedelta(200)
         n_confs = sum(pres_refs.index>pres_end)
         if n_confs:
             s = sum(pres_refs[pres_refs.index>pres_end][pres])/float(n_confs)
@@ -124,7 +150,7 @@ ps = pandas.DataFrame(pres_cites, columns=('pres', 'cites')).set_index('pres')
 ps = ps[ps['cites']>0].sort_values('cites', ascending=False)
 
 fig, ax = pl.subplots(figsize=(12,5))
-ax.bar(range(len(ps)), ps.values, align='center')
+ax.bar(range(len(ps)), ps['cites'], align='center')
 ax.set_xlim([-0.5, len(ps)-0.5])
 pl.xticks(range(len(ps)), ps.index, rotation=45, ha='right')
 pl.subplots_adjust(bottom=0.30)
@@ -174,7 +200,7 @@ pl.savefig(output_dir + 'kimball.png')
 #####
 
 quote_words = talks_only.body.str.findall(u'(\u201c[^\u201d]*\u201d)').map(lambda x: len(' '.join(x).split(' ')))
-all_words = talks_only.body.map(lambda x:len(x.split(' ')))
+all_words = talks_only.word_count
 quote_frac = talks_only.assign(quote_frac=quote_words/all_words).groupby(group).mean()['quote_frac']
 fig, ax = pl.subplots(figsize=(12,5))
 quote_frac.plot(ax=ax)
@@ -220,7 +246,10 @@ for apo in all_q12:
         cites_post = cite_count.index > last_talk+datetime.timedelta(200)
         all_ratio = sum(cite_count)/float(len(talk_counts[talk_counts.index>=first_talk]))
         n_confs = sum(talk_counts.index>last_talk+datetime.timedelta(200))
-        post_ratio = sum(cites_post)/float(n_confs)
+        if n_confs:
+            post_ratio = sum(cites_post)/float(n_confs)
+        else:
+            post_ratio = 0
     else:
         all_ratio = sum(cite_count)/float(len(talk_counts))
         post_ratio = all_ratio
@@ -245,6 +274,19 @@ pl.legend(ac_final.columns)
 pl.title('Posthumous mentions of past leaders')
 pl.ylabel('average references per conference')
 pl.savefig(output_dir + 'influencers.png')
+
+
+####
+df_all['refcount'] = df_all.references.str.len()
+ref_counts = df_all.groupby(group).mean()['refcount']
+fig, ax = pl.subplots(figsize=(12,5))
+ref_counts.plot(ax=ax)
+ax.set_xlim(daterange)
+pl.grid(axis='y')
+pl.title('Citations per talk')
+pl.ylabel('average citations per talk')
+pl.savefig(output_dir + 'citations_per_talk.png')
+
 
 
 #####

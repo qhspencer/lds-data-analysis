@@ -4,6 +4,7 @@ import glob
 
 def replace_vals(string):
     replace_table = {u'\xa0':' ',
+                     u'\u00a0':' ',
                      u'\u2013':'-'}
 
     for old, new in replace_table.iteritems():
@@ -56,8 +57,9 @@ def load_data():
     # remove or replace unneeded characters in body
     df_all = df_all.replace(
         {'author': clean_author_dict,
-         'body': {'\t|\n':'', u'\u2013':'-'}}, regex=True)
+         'body': {'\t|\n':'', u'\u2013':'-', '  ':' '}}, regex=True)
     df_all = title_cleanup(df_all)
+    df_all['word_count'] = df_all.body.str.count(' ') + 1
 
     pres = get_current_president(df_all)
     df_all = df_all.join(pres, 'date')
