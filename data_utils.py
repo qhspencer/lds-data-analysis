@@ -2,18 +2,23 @@ import pandas
 import datetime
 import glob
 
+ndash = '\u2013'
+
 def replace_vals(string):
     replace_table = {u'\xa0':' ',
                      u'\u00a0':' ',
-                     u'\u2013':'-'}
+                     ndash:'-',
+                     '\n':' '}
 
-    for old, new in replace_table.iteritems():
+    for old, new in replace_table.items():
         string = string.replace(old, new)
     return string
 
 def clean_strings(strings):
-    return [replace_vals(string.strip()) for string in strings]
-    
+    '''clean an array of strings by stripping white space from the beginning
+    and end, and removing empty strings from the array'''
+    cleaned = [replace_vals(s.strip()) for s in strings]
+    return [s for s in cleaned if s!='']
 
 def clean_join_strings(strings):
     return ' '.join(clean_strings(strings)).strip()
@@ -57,7 +62,7 @@ def load_data():
     # remove or replace unneeded characters in body
     df_all = df_all.replace(
         {'author': clean_author_dict,
-         'body': {'\t|\n':'', u'\u2013':'-', '  ':' '}}, regex=True)
+         'body': {'\t|\n':'', ndash:'-', '  ':' '}}, regex=True)
     df_all = title_cleanup(df_all)
     df_all['word_count'] = df_all.body.str.count(' ') + 1
 

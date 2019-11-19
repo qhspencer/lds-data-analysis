@@ -21,7 +21,7 @@ enc = json.JSONEncoder()
 url_base = 'https://www.churchofjesuschrist.org'
 for year in range(start_date, end_date):
     for month in [4, 10]:
-        outfile = 'data/{0}.{1:02d}.json'.format(year, month)
+        outfile = 'data_lds_org/{0}.{1:02d}.json'.format(year, month)
         if overwrite or not os.path.exists(outfile):
             print 'loading', year, month
             url = '{0}/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)
@@ -55,12 +55,12 @@ for year in range(start_date, end_date):
                         if ref_str.endswith('.'):
                             all_refs.append(cur_ref)
                             cur_ref = ''
-                    out_list.append({'year':year, 'month':month, 'title':title,
-                                     'author':author, 'author_title':author_title, 'body':body,
-                                     'references':all_refs, 'scripture_references':scripture_refs})
+                    out_list.append(enc.encode({'year':year, 'month':month, 'title':title,
+                                                'author':author, 'author_title':author_title, 'body':body,
+                                                'references':all_refs, 'scripture_references':scripture_refs}))
 
                     print u'downloaded "{0}", {1} ({2})'.format(title, author, author_title)
 
             with open(outfile, 'w') as fh:
-                fh.write(enc.encode(out_list))
-                print "wrote:", outfile
+                fh.write('\n'.join(out_list))
+                print("wrote:", outfile)
