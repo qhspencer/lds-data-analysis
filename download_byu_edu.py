@@ -99,10 +99,11 @@ for year in years:
                 html_txt = driver.execute_script("return document.body.innerHTML")
                 tree = html.fromstring(html_txt)
                 json_str = parse_talk(tree, year, month)
-                print(json.loads(json_str)['author'])
-                print(json.loads(json_str)['author_title'])
-                print(json.loads(json_str)['title'])
-                print('word count: ' + str(len(' '.join(json.loads(json_str)['body']).split(' '))))
+
+                talk_data = json.loads(json_str)
+                wc = len(' '.join(talk_data['body']).split(' '))
+                print('{0:s} ({1:s}) "{2:s}" (word count: {3:d})'.format(
+                    talk_data['author'], talk_data['author_title'], talk_data['title'], wc))
                 json_data.append(json_str)
 
             with open(outfile, 'w') as fh:

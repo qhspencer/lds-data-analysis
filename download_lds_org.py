@@ -23,8 +23,9 @@ for year in range(start_date, end_date):
     for month in [4, 10]:
         outfile = 'data_lds_org/{0}.{1:02d}.json'.format(year, month)
         if overwrite or not os.path.exists(outfile):
-            print 'loading', year, month
             url = '{0}/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)
+            print(url)
+            print('=== processing conference: {0:d}-{1:02d}'.format(year, month))
 
             page = requests.get(url)
             tree = html.fromstring(page.content)
@@ -36,7 +37,7 @@ for year in range(start_date, end_date):
                 page = requests.get(url_base + t)
                 page.encoding = 'UTF-8'
                 tree = html.fromstring(page.text)
-                title = clean_join_strings(tree.xpath("//*[@id='title1']//text()"))
+                title = clean_join_strings(tree.xpath("//*[@id='title1' or @id='subtitle1']//text()"))
                 if title!='':
                     # Note: checking some older talks showed the author tags may be different.
                     # Need to check those and update as needed.
@@ -55,11 +56,13 @@ for year in range(start_date, end_date):
                         if ref_str.endswith('.'):
                             all_refs.append(cur_ref)
                             cur_ref = ''
-                    out_list.append(enc.encode({'year':year, 'month':month, 'title':title,
-                                                'author':author, 'author_title':author_title, 'body':body,
-                                                'references':all_refs, 'scripture_references':scripture_refs}))
+                    json_str = enc.encode({'year':year, 'month':month, 'title':title,
+                                           'author':author, 'author_title':author_title, 'body':body,
+                                           'references':all_refs, 'scripture_references':scripture_refs})
 
-                    print u'downloaded "{0}", {1} ({2})'.format(title, author, author_title)
+                    wc = len(' '.join(body).split(' '))
+                    print('{0:s} ({1:s}) "{2:s}" (word count: {3:d})'.format(author, author_title, title, wc))
+                    out_list.append(json_str)
 
             with open(outfile, 'w') as fh:
                 fh.write('\n'.join(out_list))
