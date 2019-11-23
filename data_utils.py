@@ -3,9 +3,10 @@ import datetime
 import glob
 
 ndash = '\u2013'
+nbsp = u'\xa0'
 
 def replace_vals(string):
-    replace_table = {u'\xa0':' ',
+    replace_table = {nbsp:' ',
                      u'\u00a0':' ',
                      ndash:'-',
                      '\n':' '}

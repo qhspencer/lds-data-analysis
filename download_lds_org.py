@@ -44,10 +44,9 @@ for year in range(start_date, end_date):
                     author = clean_join_strings(tree.xpath("//*[@class='byline']/*[@id='p1' or @id='author1']/text()"))
                     author = re.sub('By |Presented by ', '', author)
                     author_title = clean_join_strings(tree.xpath("//*[@class='byline']/*[@id='p2' or @id='author2']/text()"))
+                    if author_title=='' and author.startswith('President '):
+                        author_title = 'President of the Church'
                     body = clean_strings(tree.xpath("//div[@class='body-block']//text()[not(parent::sup)]"))
-                    # Remove strings that are numbers, which are assumed to be footnote links
-                    #strings = [s for s in strings if not s.isdigit()]
-                    #body = re.sub(' +', ' ', ' '.join(strings).strip())
                     scripture_refs = clean_strings(tree.xpath("//a[@class='scripture-ref']//text()"))
                     all_refs = []
                     cur_ref = ''
@@ -65,5 +64,5 @@ for year in range(start_date, end_date):
                     out_list.append(json_str)
 
             with open(outfile, 'w') as fh:
-                fh.write('\n'.join(out_list))
+                fh.write('[' + ',\n'.join(out_list) + ']')
                 print("wrote:", outfile)

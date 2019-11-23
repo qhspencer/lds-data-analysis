@@ -22,7 +22,11 @@ driver = webdriver.Safari()
 
 def parse_talk(tree, year, month):
     xp_prefix = "//div[@id='centercolumn']"
-    exclude_cites = "[not(ancestor::*[@class='kicker']) and not(ancestor::span[contains(@class, 'ccontainer lparen')])]"
+    exclude_cites = '''[not(ancestor::*[@class='kicker']) and
+                        not(ancestor::span[contains(@class, 'ccontainer lparen')]) and
+                        not(ancestor::span[contains(@class, 'ccontainer lbrack')]) and
+                        not(ancestor::*[contains(@id, 'reference')]) and
+                        not(ancestor::*[@class='noteMarker'])]'''
     title = clean_join_strings(tree.xpath(xp_prefix + "//p[@class='gctitle']//text()"))
     if title!='': # old format
         author = clean_join_strings(tree.xpath(xp_prefix + "//p[@class='gcspeaker']//text()"))
@@ -42,6 +46,7 @@ def parse_talk(tree, year, month):
             author_title = ''
         author = re.sub('By |Presented by ', '', author)
         body = clean_strings(tree.xpath(xp_prefix + "//div[@id='primary']//text()" + exclude_cites))
+
     if author_title=='':
         if author.startswith('President '):
             author_title = 'President of the Church'
@@ -107,5 +112,5 @@ for year in years:
                 json_data.append(json_str)
 
             with open(outfile, 'w') as fh:
-                fh.write('\n'.join(json_data))
+                fh.write('[' + ',\n'.join(json_data) + ']')
                 print("wrote:", outfile)
