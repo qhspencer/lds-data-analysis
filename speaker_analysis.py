@@ -20,6 +20,7 @@ parser.add_argument('--output-dir', dest='output_dir', type=str, default='.',
                     help='path for saving output files')
 parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
                     choices=['year', 'conf'], help='specifies spacing of time axis')
+parser.add_argument('--data-source', dest='ds', type=str, default='all')
 args = parser.parse_args()
 
 # This needs to be set high if a large number of plots are being generated
@@ -28,7 +29,7 @@ pl.style.use(args.mpl_style)
 
 output_dir = args.output_dir + '/'
 print "Loading data"
-df_all = load_data()
+df_all = load_data(source=args.ds)
 
 talks_only = get_only_talks(df_all)
 talks_only = talks_only.assign(President=0)
@@ -89,6 +90,7 @@ prev_q15_averages = speaker_averages[speaker_averages.index.isin(dead_apostle_li
 
 note_data = q15_averages.append(pres_averages).append(prev_q15_averages).assign(ha='right', va='bottom')
 note_data = note_data.assign(last_name=note_data.index.map(lambda x: x.split(' ')[-1]))
+note_data.loc['George Albert Smith', 'last_name'] = 'GASmith'
 note_data = note_data.reset_index().set_index('last_name')
 
 def create_fig(col0, col1, note_data, titlestr, filename):
@@ -118,11 +120,12 @@ note_data['ha'] = 'right'
 note_data['va'] = 'bottom'
 note_data['r'] = 0
 note_data.loc[
-    ['Renlund', 'Rasband', 'Monson', 'Cook', 'Hinckley', 'Bednar', 'Faust',
-     'Oaks', 'Holland', 'Uchtdorf', 'Andersen'], 'ha'] = 'left'
+    ['Renlund', 'Rasband', 'Monson', 'Cook', 'Hinckley', 'Bednar', 'Faust', 'Nelson',
+     'Hunter', 'Smith', 'Stevenson', 'Benson', 'McKay', 'McConkie', 'Oaks', 'Holland',
+     'Uchtdorf', 'Andersen'], 'ha'] = 'left'
 note_data.loc[
     ['Christofferson', 'Cook', 'Oaks', 'Hinckley', 'Eyring', 'Faust', 'Lee',
-     'Soares', 'Stevenson', 'Monson', 'Ballard', 'Kimball'], 'va'] = 'top'
+     'Holland', 'Andersen', 'Soares', 'Stevenson', 'Monson', 'Ballard', 'Kimball'], 'va'] = 'top'
 titlestr = 'Jesus and Satan references (per 1000 words)\n by recent apostles and church presidents'
 create_fig('Jesus', 'Satan', note_data, titlestr, 'jesus_vs_satan.png')
 
@@ -145,10 +148,11 @@ note_data['ha'] = 'left'
 note_data['va'] = 'bottom'
 note_data['r'] = 0
 note_data.loc[note_data['grace']>1.0, 'ha'] = 'right'
-note_data.loc[['Christofferson', 'Lee', 'Monson', 'McConkie', 'Stevenson', 'Hunter',
-               'Hinckley', 'Andersen', 'Benson', 'Faust', 'Smith'], 'va'] = 'top'
-note_data.loc[['Hunter'], 'ha'] = 'right'
-note_data.loc[['Ballard'], 'r'] = 10
+note_data.loc[['Christofferson', 'Monson', 'McConkie', 'Hunter', 'Maxwell',
+               'Hinckley', 'Grant', 'Andersen', 'McKay', 'Faust', 'Smith'], 'va'] = 'top'
+note_data.loc[['Hinckley'], 'ha'] = 'center'
+note_data.loc[['Ballard', 'Kimball'], 'r'] = 5
+note_data.loc[['Lee'], 'r'] = 10
 titlestr = 'grace and works references (per 1000 words)\n by recent apostles and church presidents'
 create_fig('grace', 'works', note_data, titlestr, 'grace_vs_works.png')
 

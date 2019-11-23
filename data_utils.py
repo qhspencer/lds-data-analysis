@@ -1,8 +1,10 @@
 import pandas
 import datetime
 import glob
+import re
 
 ndash = '\u2013'
+mdash = '\u2014'
 nbsp = u'\xa0'
 
 def replace_vals(string):
@@ -43,12 +45,23 @@ clean_author_dict = {
     'Ellen W. Smoot': 'Mary Ellen W. Smoot',
     'Michael J. Teh':'Michael John U. Teh',
     'Teddy E. Brewerton':'Ted E. Brewerton',
-    'of the Church':'Gordon B. Hinckley'}
+}
 
-
-def load_data():
+def load_data(source='all'):
     dfs = []
-    for file in glob.glob('data/*.json'):
+    byu_edu_list = glob.glob('data_byu_edu/*.json')
+    lds_org_list = glob.glob('data_lds_org/*.json')
+    if source=='byu':
+        source_list = byu_edu_list
+    elif source=='lds':
+        source_list = lds_org_list
+    elif source=='all':
+        # Use BYU as primary, and fill in missing from lds.org
+        source_list = byu_edu_list
+        source_list += [f for f in lds_org_list if not
+                        any(map(lambda x: re.findall('/[0-9]{4}.[0-9]{2}', f)[0] in x, source_list))]
+    for file in source_list:
+        print file
         dfs.append(pandas.read_json(file))
 
     df_all = pandas.concat(dfs).reset_index()
@@ -69,7 +82,6 @@ def load_data():
 
     pres = get_current_president(df_all)
     df_all = df_all.join(pres, 'date')
-
     return df_all
 
 prior_apostles = (
@@ -180,8 +192,8 @@ def get_scripture_refs(all_data):
         'Doctrine and Covenants':'D&C',
         'octrine and Covenants':'D&C',
         'Doctine and Covenants':'D&C',
-        u'Joseph Smith\u2014History':u'JS\u2014H',
-        u'Joseph Smith\u2014Matthew':u'JS\u2014M',
+        u'Joseph Smith'+mdash+'History':u'JS'+mdash+'H',
+        u'Joseph Smith'+mdash+'Matthew':u'JS'+mdash+'M',
         'Joseph Smith Translation': 'JST',
         'Articles of Faith':'A of F',
         'Abraham':'Abr.',
@@ -260,7 +272,7 @@ def get_scripture_refs(all_data):
 
 
     standard_work_dict = {
-        'A of F':'PGP', u'JS\u2014H':'PGP', 'Moses':'PGP', 'Abr.':'PGP', u'JS\u2014M':'PGP',
+        'A of F':'PGP', u'JS'+mdash+'H':'PGP', 'Moses':'PGP', 'Abr.':'PGP', u'JS'+mdash+'M':'PGP',
         '1 Ne.':'BoM', '2 Ne.':'BoM', 'Jacob':'BoM', 'Enos':'BoM',
         'Jarom':'BoM', 'Omni':'BoM', 'Mosiah':'BoM', 'Alma':'BoM',
         'Hel.':'BoM', '3 Ne.':'BoM', '4 Ne.':'BoM','Morm.':'BoM',
@@ -324,9 +336,11 @@ def title_cleanup(df):
            (df['author_title']=='') &
            (df['date']<datetime.date(1981, 6, 1)),
            'author_title'] = apostle
-    df.loc[(df['author']=='Joseph Fielding Smith'),
+    df.loc[(df['author']=='Joseph Fielding Smith') &
+           (df['author_title']==''),
            'author_title'] = pres
     df.loc[(df['author']=='Harold B. Lee') &
+           (df['author_title']=='') &
            (df['date']>datetime.date(1972, 6, 1)),
            'author_title'] = pres
     df.loc[(df['author']=='Howard W. Hunter') &
@@ -388,6 +402,14 @@ def get_current_president(df):
     presidents = df[df['author_title']==
                               'President of the Church'].groupby('date').max()['author'].to_frame('president')
 
+    hjg = pandas.DataFrame({'date':['1943-10-01'],
+                            'president': 'Heber J. Grant'})
+    dom = pandas.DataFrame({'date':['1964-10-01', '1967-04-01', '1967-10-01',
+                                    '1968-04-01', '1968-10-01', '1969-04-01',
+                                    '1969-10-01'],
+                            'president': 'David O. McKay'})
+    jfs = pandas.DataFrame({'date':['1971-04-01'],
+                            'president': 'Joseph Fielding Smith'})
     swk = pandas.DataFrame({'date':['1979-04-01', '1981-10-01', '1983-04-01',
                                     '1983-10-01', '1984-04-01', '1984-10-01',
                                     '1985-10-01'],
@@ -398,7 +420,7 @@ def get_current_president(df):
                             'president':'Ezra Taft Benson'})
     tsm = pandas.DataFrame({'date':['2017-10-01'],
                             'president':'Thomas S. Monson'})
-    new = pandas.concat((swk, etb, tsm))
+    new = pandas.concat((hjg, dom, jfs, swk, etb, tsm))
     new['date'] = pandas.to_datetime(new['date'])
 
     return pandas.concat((presidents, new.set_index('date'))).sort_index()

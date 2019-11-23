@@ -37,9 +37,10 @@ output_dir = args.output_dir + '/'
 
 print "Loading data"
 searches = json.load(open(search_file))
+df_all = load_data()
 
-first_year = 1971
-last_year = datetime.date.today().year + 1
+first_year = df_all.year.min()
+last_year = df_all.year.max()
 if args.time_axis == 'year':
     group = 'year'
     daterange = [first_year, last_year]
@@ -52,7 +53,6 @@ elif args.time_axis == 'conf':
 if args.norm == 'words':
     yaxis_str = 'uses per million words'
 
-df_all = load_data()
 talks_only = get_only_talks(df_all)
 talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
 
