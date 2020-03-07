@@ -3,9 +3,10 @@ import datetime
 import glob
 import re
 
-ndash = '\u2013'
-mdash = '\u2014'
+ndash = u'\u2013'
+mdash = u'\u2014'
 nbsp = u'\xa0'
+rsqm = u'\u2019'
 
 def replace_vals(string):
     replace_table = {nbsp:' ',
@@ -69,7 +70,8 @@ def load_data(source='all'):
 
     # Create date column
     df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str))
-    df_all['year'] = df_all['date'].dt.year
+    df_all['year'] = df_all['date'].dt.year.map(lambda x: datetime.date(x, 6, 1))
+    df_all['decade'] = df_all['date'].dt.year.map(lambda x: datetime.date(int(x/10)*10 + 5, 1, 1))
 
     # Clean up strings:
     # standardize author names and remove titles
@@ -80,8 +82,33 @@ def load_data(source='all'):
     df_all = title_cleanup(df_all)
     df_all['word_count'] = df_all.body.str.count(' ') + 1
 
-    pres = get_current_president(df_all)
-    df_all = df_all.join(pres, 'date')
+    # get current president from apostle data
+    apostle_data = pandas.read_json('data/apostles.json', orient='records', lines=True,
+                                    convert_dates=['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p'])
+    pres_list = apostle_data[~apostle_data.sdate_p.isna()].reset_index()[['name', 'sdate_p']]
+    cb = pandas.cut(df_all.date, pres_list.sdate_p.append(pandas.Series(datetime.datetime.today())), labels=False)
+    cur_pres = pandas.merge(cb.to_frame('p_idx'), pres_list, left_on='p_idx', right_index=True)['name']
+    df_all['president'] = cur_pres
+
+###### still in progress
+#    #((apostle_data['name']==rec['author']) & (apostle_data['sdate']<rec['date']+datetime.timedelta(10)))
+#    #((apostle_data['name']==rec['author']) & (apostle_data['sdate']<rec['date']+datetime.timedelta(10)))
+#
+#    dates = df_all['date'].drop_duplicates()
+#    print('computing ranks')
+#    df_all['rank'] = 100
+#    for idx in range(len(df_all)):
+#        rec = df_all.loc[idx]
+#        dt = rec['date'] + datetime.timedelta(10)
+#        q15 = apostle_data[(apostle_data.sdate<dt) &
+#                           ((apostle_data.edate>dt) | (apostle_data.edate.isna()))].sort_values('sdate')
+#        q15_rank = q15.set_index('name')['sdate'].rank()
+#        if rec['author'] in q15_rank.index:
+#            df_all[idx, 'rank'] = int(q15_rank[rec['author']])
+#
+#        from IPython.core.debugger import set_trace
+#        set_trace()
+
     return df_all
 
 prior_apostles = (
@@ -397,33 +424,6 @@ def title_cleanup(df):
 
     # Many more to go still ...
     return df
-
-def get_current_president(df):
-    presidents = df[df['author_title']==
-                              'President of the Church'].groupby('date').max()['author'].to_frame('president')
-
-    hjg = pandas.DataFrame({'date':['1943-10-01'],
-                            'president': 'Heber J. Grant'})
-    dom = pandas.DataFrame({'date':['1964-10-01', '1967-04-01', '1967-10-01',
-                                    '1968-04-01', '1968-10-01', '1969-04-01',
-                                    '1969-10-01'],
-                            'president': 'David O. McKay'})
-    jfs = pandas.DataFrame({'date':['1971-04-01'],
-                            'president': 'Joseph Fielding Smith'})
-    swk = pandas.DataFrame({'date':['1979-04-01', '1981-10-01', '1983-04-01',
-                                    '1983-10-01', '1984-04-01', '1984-10-01',
-                                    '1985-10-01'],
-                            'president':'Spencer W. Kimball'})
-    etb = pandas.DataFrame({'date':['1990-04-01', '1990-10-01', '1991-04-01',
-                                    '1991-10-01', '1992-04-01', '1992-10-01',
-                                    '1993-04-01', '1993-10-01', '1994-04-01'],
-                            'president':'Ezra Taft Benson'})
-    tsm = pandas.DataFrame({'date':['2017-10-01'],
-                            'president':'Thomas S. Monson'})
-    new = pandas.concat((hjg, dom, jfs, swk, etb, tsm))
-    new['date'] = pandas.to_datetime(new['date'])
-
-    return pandas.concat((presidents, new.set_index('date'))).sort_index()
 
 def get_only_talks(df):
     exclude_list = (

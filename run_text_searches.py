@@ -13,6 +13,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as pl
 import matplotlib.dates as mdates
 
+ta_dict = {'year': 'year',
+           'conf': 'date',
+           'five': '5 year period',
+           'decade': 'decade'}
+nm_dict = {'words': 'uses per million words',
+           'conf': 'uses per conference'}
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--mpl-style', dest='mpl_style', type=str, default='bmh',
                     choices=['bmh', 'fivethirtyeight'], help='style package for matplotlib plots')
@@ -21,9 +28,9 @@ parser.add_argument('--output-dir', dest='output_dir', type=str, default='.',
 parser.add_argument('--search-data', dest='search_data', type=str, default='search_data.json',
                     help='JSON file containing search data')
 parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
-                    choices=['year', 'conf'], help='specifies spacing of time axis')
+                    choices=ta_dict.keys(), help='specifies spacing of time axis')
 parser.add_argument('--norm', dest='norm', type=str, default='conf',
-                    choices=['words', 'conf'], help='specifies normalization factor')
+                    choices=nm_dict.keys(), help='specifies normalization factor')
 parser.add_argument('--smooth', dest='smooth', type=int, default=None,
                     help='size of window for smoothing')
 args = parser.parse_args()
@@ -31,30 +38,24 @@ args = parser.parse_args()
 # This needs to be set high if a large number of plots are being generated
 pl.rcParams['figure.max_open_warning'] = 50
 pl.style.use(args.mpl_style)
+prop_cycle = pl.rcParams['axes.prop_cycle']
 
 search_file = args.search_data
 output_dir = args.output_dir + '/'
 
 print "Loading data"
 searches = json.load(open(search_file))
-df_all = load_data()
 
-first_year = df_all.year.min()
-last_year = df_all.year.max()
-if args.time_axis == 'year':
-    group = 'year'
-    daterange = [first_year, last_year]
-    yaxis_str = 'uses per year'
-elif args.time_axis == 'conf':
-    group = 'date'
-    daterange = [datetime.date(first_year, 1, 1),
-                 datetime.date(last_year, 4, 1)]
-    yaxis_str = 'uses per conference'
-if args.norm == 'words':
-    yaxis_str = 'uses per million words'
+talks_only = get_only_talks(load_data())
+talks_only['5 year period'] = talks_only['date'].dt.year.map(lambda x: datetime.date(int(x/5)*5+2, 6, 1))
 
-talks_only = get_only_talks(df_all)
-talk_counts = talks_only.groupby('date').count()['year'].to_frame('talks')
+first_year = talks_only.year.min().year
+last_year = talks_only.year.max().year
+daterange = [datetime.date(first_year, 1, 1),
+             datetime.date(last_year, 4, 1)]
+group = ta_dict[args.time_axis]
+yaxis_str = nm_dict[args.norm]
+
 
 for search in searches:
     print 'running search:', search['search']
@@ -85,17 +86,25 @@ for search in searches:
         else:
             sums = talks_only.assign(matches=matches).groupby(group).sum()
             results[l] = sums['matches']/sums['word_count']*1e6
+        if 'author analysis' in search.keys() and search['author analysis']=='true':
+            author_count = talks_only.join(matches.to_frame('matches')).groupby('author').sum()['matches']
+            print(author_count.sort_values().to_frame(s['label'])[:-6:-1])
 
     if 'include sum' in search.keys() and search['include sum']=='true':
         results['all combined'] = results.sum(1)
+
 
     fig, ax = pl.subplots(figsize=(12,5))
     if args.smooth==None:
         results.plot(ax=ax)
     else:
+        ax.set_prop_cycle(prop_cycle[:len(results.columns)])
         results.rolling(args.smooth, min_periods=1, center=True).mean().plot(ax=ax)
+        results.plot(ax=ax, style='.', legend=False)
 
     ax.set_xlim(daterange)
+    ax.xaxis.set_major_locator(mdates.YearLocator(10))
+    ax.xaxis.set_minor_locator(mdates.YearLocator(5))
     if 'start year' in search.keys():
         ax.set_xlim(left=datetime.date(search['start year'], 4, 1))
     ax.set_ylim(bottom=0)
