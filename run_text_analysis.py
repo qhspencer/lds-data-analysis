@@ -26,7 +26,7 @@ parser.add_argument('--norm', dest='norm', type=str, default='conf',
 args = parser.parse_args()
 
 output_dir = args.output_dir + '/'
-print "Loading data"
+print("Loading data")
 talks_only = get_only_talks(load_data()).copy()
 gc.collect()
 
@@ -48,9 +48,12 @@ short_words = [
     'into', 'ye', 'than', 'also', 'up', 'could']
 
 # Get all names of apostles
-names = [n for n in set(' '.join(prior_apostles).lower().split(' ')) if len(n)>2]
-names += [s.lower().replace('.', '') for s in prior_apostles]
-for a in prior_apostles:
+apostle_data = load_apostle_data()
+apostle_list = apostle_data['name'].str.lower().to_list()
+names = [n for n in set(' '.join(apostle_list).split(' ')) if len(n)>2]
+names += [s.lower().replace('.', '') for s in apostle_list]
+
+for a in apostle_list:
     s = a.lower().replace('.', '').split(' ')
     names += [' '.join(s[:-1]), ' '.join(s[1:])]
 
@@ -83,7 +86,7 @@ def decade_analysis(dataframe, column, min_length=5, min_total=200):
 ###########
 import nltk
 print('processing words')
-talks_only['decade'] = talks_only['year'].divide(10).astype(int)*10
+talks_only['decade'] = talks_only['year'].dt.year.divide(10).astype(int)*10
 replace_list = (("'s ", rsqm+"s "), ("n't ", "n"+rsqm+"t "),
                 ("'ll", rsqm+"ll"), ("'ve", rsqm+"ve"))
 
@@ -97,14 +100,14 @@ print('single word analysis')
 single_word_table = decade_analysis(talks_only, 'words')
 print('2-gram analysis')
 double_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 2)]).to_frame('2grams'),
-    '2grams', 8))
+    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 2)]).to_frame('2grams')),
+    '2grams', 8)
 print('3-gram analysis')
 triple_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 3)]).to_frame('3grams'),
-    '3grams', 10))
+    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 3)]).to_frame('3grams')),
+    '3grams', 10)
 print('4-gram analysis')
-triple_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 4)]).to_frame('4grams'),
-    '4grams', 12))
+quad_word_table = decade_analysis(talks_only[['decade']].join(
+    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 4)]).to_frame('4grams')),
+    '4grams', 12)
 

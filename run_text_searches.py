@@ -43,7 +43,7 @@ prop_cycle = pl.rcParams['axes.prop_cycle']
 search_file = args.search_data
 output_dir = args.output_dir + '/'
 
-print "Loading data"
+print("Loading data")
 searches = json.load(open(search_file))
 
 talks_only = get_only_talks(load_data())
@@ -58,7 +58,7 @@ yaxis_str = nm_dict[args.norm]
 
 
 for search in searches:
-    print 'running search:', search['search']
+    print('running search:', search['search'])
     if 'case sensitive' in search.keys() and search['case sensitive']=='true':
         cs = True
     else:

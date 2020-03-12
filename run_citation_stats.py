@@ -109,12 +109,10 @@ pl.savefig(output_dir + 'quotes.png')
 #######################################
 fig, ax = pl.subplots(figsize=(12,5))
 pres_df = talks_only['date'].to_frame('date')
-president_list = talks_only['president'].unique().tolist()
-dead_pres_list = ['Joseph Smith', 'Brigham Young', 'John Taylor',
-                  'Wilford Woodruff', 'Lorenzo Snow',
-                  'Joseph F. Smith', 'Heber J. Grant',
-                  'George Albert Smith', 'David O. McKay']
-for pres in president_list + dead_pres_list:
+apostle_data = load_apostle_data()
+president_list = ['Joseph Smith'] + \
+    apostle_data[~apostle_data['sdate_p'].isna()]['name'].to_list()
+for pres in president_list:
     pres_df[pres] = talks_only['body'].str.count(pres)>0
     if pres == 'Joseph Smith':
         pres_df[pres] |= talks_only['body'].str.count('Prophet Joseph')>0
@@ -134,7 +132,7 @@ pl.savefig(output_dir + 'presidents.png')
 
 
 pres_cites = []
-for pres in president_list + dead_pres_list:
+for pres in president_list:
     if pres in dead_pres_list:
         s = sum(pres_refs[pres])/float(len(pres_refs.index.unique()))
     else:
@@ -224,16 +222,8 @@ pl.ylabel('words')
 pl.savefig(output_dir + 'talks_conf.png')
 
 
-
-###
-recent_apostles = talks_only[(talks_only['author_title'].str.contains('Twelve')) |
-                             (talks_only['author_title']=='President of the Church')]['author'].unique()
-
-all_q15 = list(set(recent_apostles.tolist() + list(prior_apostles) +
-                   president_list + dead_pres_list))
-
-all_q12 = list(set(recent_apostles.tolist() + list(prior_apostles)) -
-               set(president_list + dead_pres_list))
+all_q15 = ['Joseph Smith'] + apostle_data['name'].to_list()
+all_q12 = list(set(all_q15) - set(president_list))
 
 apo_counts = []
 for apo in all_q12:

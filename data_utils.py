@@ -1,4 +1,5 @@
 import pandas
+import numpy
 import datetime
 import glob
 import re
@@ -7,6 +8,8 @@ ndash = u'\u2013'
 mdash = u'\u2014'
 nbsp = u'\xa0'
 rsqm = u'\u2019'
+
+apostle_data_loc = 'data/apostles.json'
 
 def replace_vals(string):
     replace_table = {nbsp:' ',
@@ -48,6 +51,10 @@ clean_author_dict = {
     'Teddy E. Brewerton':'Ted E. Brewerton',
 }
 
+def load_apostle_data():
+    date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
+    return pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
+
 def load_data(source='all'):
     dfs = []
     byu_edu_list = glob.glob('data_byu_edu/*.json')
@@ -62,16 +69,18 @@ def load_data(source='all'):
         source_list += [f for f in lds_org_list if not
                         any(map(lambda x: re.findall('/[0-9]{4}.[0-9]{2}', f)[0] in x, source_list))]
     for file in source_list:
-        print file
+        print(file)
         dfs.append(pandas.read_json(file))
 
     df_all = pandas.concat(dfs).reset_index()
     df_all.body = df_all.body.map(lambda x: ' '.join(x))
 
     # Create date column
-    df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str))
-    df_all['year'] = df_all['date'].dt.year.map(lambda x: datetime.date(x, 6, 1))
-    df_all['decade'] = df_all['date'].dt.year.map(lambda x: datetime.date(int(x/10)*10 + 5, 1, 1))
+    df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str), utc=True)
+    df_all['year'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(x, 6, 1)))
+    df_all['dec_dt'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(int(x/10)*10 + 5, 1, 1)))
+#    df_all['year'] = df_all['date'].dt.year.map(lambda x: datetime.date(x, 6, 1))
+#    df_all['decade'] = df_all['date'].dt.year.map(lambda x: datetime.date(int(x/10)*10 + 5, 1, 1))
 
     # Clean up strings:
     # standardize author names and remove titles
@@ -79,35 +88,40 @@ def load_data(source='all'):
     df_all = df_all.replace(
         {'author': clean_author_dict,
          'body': {'\t|\n':'', ndash:'-', '  ':' '}}, regex=True)
-    df_all = title_cleanup(df_all)
     df_all['word_count'] = df_all.body.str.count(' ') + 1
 
     # get current president from apostle data
-    apostle_data = pandas.read_json('data/apostles.json', orient='records', lines=True,
-                                    convert_dates=['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p'])
+    apostle_data = load_apostle_data()
     pres_list = apostle_data[~apostle_data.sdate_p.isna()].reset_index()[['name', 'sdate_p']]
-    cb = pandas.cut(df_all.date, pres_list.sdate_p.append(pandas.Series(datetime.datetime.today())), labels=False)
+
+    date_list = pres_list.sdate_p.append(pandas.Series(pandas.to_datetime(datetime.datetime.today(), utc=True)))
+    cb = pandas.cut(df_all.date, date_list, labels=False)
     cur_pres = pandas.merge(cb.to_frame('p_idx'), pres_list, left_on='p_idx', right_index=True)['name']
     df_all['president'] = cur_pres
+    df_all = title_cleanup(df_all)
 
-###### still in progress
-#    #((apostle_data['name']==rec['author']) & (apostle_data['sdate']<rec['date']+datetime.timedelta(10)))
-#    #((apostle_data['name']==rec['author']) & (apostle_data['sdate']<rec['date']+datetime.timedelta(10)))
-#
-#    dates = df_all['date'].drop_duplicates()
-#    print('computing ranks')
-#    df_all['rank'] = 100
-#    for idx in range(len(df_all)):
-#        rec = df_all.loc[idx]
-#        dt = rec['date'] + datetime.timedelta(10)
-#        q15 = apostle_data[(apostle_data.sdate<dt) &
-#                           ((apostle_data.edate>dt) | (apostle_data.edate.isna()))].sort_values('sdate')
-#        q15_rank = q15.set_index('name')['sdate'].rank()
-#        if rec['author'] in q15_rank.index:
-#            df_all[idx, 'rank'] = int(q15_rank[rec['author']])
-#
-#        from IPython.core.debugger import set_trace
-#        set_trace()
+    offset = pandas.to_timedelta(20, unit='days')
+    dates = df_all['date'].drop_duplicates()
+    print('computing ranks')
+    df_all['rank'] = 100
+
+    sdict = {}
+    for dt in dates:
+        adf = apostle_data[(apostle_data['sdate']<dt+offset) &
+                           ((apostle_data['edate']>dt) | (apostle_data['edate'].isna()))]
+        sdict.update({dt: {b:a+1 for a, b in adf.reset_index()['name'].iteritems()}})
+
+    for idx in df_all.index:
+        rdict = sdict[df_all.loc[idx, 'date']]
+        auth = df_all.loc[idx, 'author']
+        if auth in rdict.keys():
+            df_all.loc[idx, 'rank'] = rdict[auth]
+
+    #print(numpy.array([len(x) for x in sdict.values()]).mean())
+
+    ############################################
+    #from IPython.core.debugger import set_trace
+    #set_trace()
 
     return df_all
 
@@ -337,6 +351,7 @@ def get_ref_counts(ref_df, group):
     sw_refs = ref_df[ref_df['sw'].isin(swlist)]
     return sw_refs.groupby([group, 'sw']).count()['author'].to_frame('count').unstack()
 
+dtutc = lambda x: pandas.to_datetime(x, utc=True)
 
 def title_cleanup(df):
     apostle = 'Of the Quorum of the Twelve Apostles'
@@ -347,29 +362,9 @@ def title_cleanup(df):
     seventy = 'Of the First Quorum of the Seventy'
     first = 'First Counselor in the First Presidency'
     rspres = 'Relief Society General President'
-    df.loc[(df['author']=='Thomas S. Monson') &
-           (df['author_title']=='') &
-           (df['date']>datetime.date(2012, 1, 1)),
-           'author_title'] = pres
-    df.loc[(df['author']=='Russell M. Nelson') &
-           (df['author_title']=='') &
-           (df['date']>datetime.date(2018, 1, 1)),
-           'author_title'] = pres
-    df.loc[(df['author']=='Gordon B. Hinckley') &
-           (df['author_title']=='') &
-           (df['date']>datetime.date(2007, 1, 1)),
-           'author_title'] = pres
-    df.loc[(df['author']=='Gordon B. Hinckley') &
-           (df['author_title']=='') &
-           (df['date']<datetime.date(1981, 6, 1)),
-           'author_title'] = apostle
-    df.loc[(df['author']=='Joseph Fielding Smith') &
-           (df['author_title']==''),
-           'author_title'] = pres
-    df.loc[(df['author']=='Harold B. Lee') &
-           (df['author_title']=='') &
-           (df['date']>datetime.date(1972, 6, 1)),
-           'author_title'] = pres
+
+    df.loc[df['author']==df['president'], 'author_title'] = pres
+
     df.loc[(df['author']=='Howard W. Hunter') &
            (df['author_title']==''),
            'author_title'] = apostle
@@ -385,11 +380,11 @@ def title_cleanup(df):
         df.loc[df['author']==apo, 'author_title'] = apostle
     df.loc[(df['author']=='James E. Faust') &
            (df['author_title']=='') &
-           (df['date']>datetime.date(1978, 6, 1)),
+           (df['date']>dtutc('1978-06-01')),
            'author_title'] = apostle
     df.loc[(df['author']=='James E. Faust') &
            (df['author_title']=='') &
-           (df['date']>datetime.date(1976, 6, 1)),
+           (df['date']>dtutc('1976-06-01')),
            'author_title'] = seventy
     df.loc[(df['author']=='James E. Faust') &
            (df['author_title']==''),
@@ -419,7 +414,7 @@ def title_cleanup(df):
     df.loc[df['author']=='Victor L. Brown', 'author_title'] = bish
     df.loc[df['author']=='H. Burke Peterson', 'author_title'] = bish1
     df.loc[(df['author']=='H. Burke Peterson') &
-           (df['date']>datetime.date(1985, 6, 1)),
+           (df['date']>dtutc('1985-06-01')),
            'author_title'] = seventy
 
     # Many more to go still ...
