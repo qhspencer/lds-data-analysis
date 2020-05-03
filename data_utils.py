@@ -3,6 +3,7 @@ import numpy
 import datetime
 import glob
 import re
+import os
 
 ndash = u'\u2013'
 mdash = u'\u2014'
@@ -55,7 +56,15 @@ def load_apostle_data():
     date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
     return pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
 
-def load_data(source='all'):
+def load_data(source='file'):
+    if source=='file' and os.path.exists('conference_data.pkl'):
+        print('loading conferece_data.pkl')
+        return pandas.read_pickle('conference_data.pkl')
+    if source=='file':
+        source = 'all'
+        save_file = True
+    else:
+        save_file = False
     dfs = []
     byu_edu_list = glob.glob('data_byu_edu/*.json')
     lds_org_list = glob.glob('data_lds_org/*.json')
@@ -72,13 +81,13 @@ def load_data(source='all'):
         print(file)
         dfs.append(pandas.read_json(file))
 
-    df_all = pandas.concat(dfs).reset_index()
+    df_all = pandas.concat(dfs, sort=False).reset_index()
     df_all.body = df_all.body.map(lambda x: ' '.join(x))
 
     # Create date column
     df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str), utc=True)
-    df_all['year'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(x, 6, 1)))
-    df_all['dec_dt'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(int(x/10)*10 + 5, 1, 1)))
+    df_all['year'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(x, 7, 1), utc=True))
+    df_all['decade'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(int(x/10)*10 + 5, 1, 1), utc=True))
 #    df_all['year'] = df_all['date'].dt.year.map(lambda x: datetime.date(x, 6, 1))
 #    df_all['decade'] = df_all['date'].dt.year.map(lambda x: datetime.date(int(x/10)*10 + 5, 1, 1))
 
@@ -117,110 +126,10 @@ def load_data(source='all'):
         if auth in rdict.keys():
             df_all.loc[idx, 'rank'] = rdict[auth]
 
-    #print(numpy.array([len(x) for x in sdict.values()]).mean())
-
-    ############################################
-    #from IPython.core.debugger import set_trace
-    #set_trace()
-
+    if save_file:
+        df_all.to_pickle('conference_data.pkl')
+        print('wrote conference_data.pkl')
     return df_all
-
-prior_apostles = (
-    'Thomas B. Marsh',
-    'David W. Patten',
-    'Brigham Young',
-    'Heber C. Kimball',
-    'Orson Hyde',
-    'William E. McLellin',
-    'Parley P. Pratt',
-    'Luke Johnson',
-    'William Smith',
-    'Orson Pratt',
-    'John F. Boynton',
-    'Lyman E. Johnson',
-    'John E. Page',
-    'John Taylor',
-    'Wilford Woodruff',
-    'George A. Smith',
-    'Willard Richards',
-    'Lyman Wight',
-    'Amasa Lyman',
-    'Ezra T. Benson',
-    'Charles C. Rich',
-    'Lorenzo Snow',
-    'Erastus Snow',
-    'Franklin D. Richards I',
-    'George Q. Cannon',
-    'Joseph F. Smith',
-    'Brigham Young Jr.',
-    'Albert Carrington',
-    'Moses Thatcher',
-    'Francis M. Lyman',
-    'John Henry Smith',
-    'George Teasdale',
-    'Heber J. Grant',
-    'John W. Taylor',
-    'Marriner W. Merrill',
-    'Anthon H. Lund',
-    'Abraham H. Cannon',
-    'Matthias F. Cowley',
-    'Abraham O. Woodruff',
-    'Rudger Clawson',
-    'Reed Smoot',
-    'Hyrum M. Smith',
-    'George Albert Smith',
-    'Charles W. Penrose',
-    'George F. Richards',
-    'Orson F. Whitney',
-    'David O. McKay',
-    'Anthony W. Ivins',
-    'Joseph Fielding Smith',
-    'James E. Talmage',
-    'Stephen L Richards',
-    'Richard R. Lyman',
-    'Melvin J. Ballard',
-    'John A. Widtsoe',
-    'Joseph F. Merrill',
-    'Charles A. Callis',
-    'J. Reuben Clark',
-    'Alonzo A. Hinckley',
-    'Albert E. Bowen',
-    'Sylvester Q. Cannon',
-    'Harold B. Lee',
-    'Spencer W. Kimball',
-    'Ezra Taft Benson',
-    'Mark E. Petersen',
-    'Matthew Cowley',
-    'Henry D. Moyle',
-    'Delbert L. Stapley',
-    'Marion G. Romney',
-    'LeGrand Richards',
-    'Adam S. Bennion',
-    'Richard L. Evans',
-    'George Q. Morris',
-    'Hugh B. Brown',
-    'Howard W. Hunter',
-    'Gordon B. Hinckley',
-    'N. Eldon Tanner',
-    'Thomas S. Monson',
-    'Boyd K. Packer',
-    'Marvin J. Ashton',
-    'Bruce R. McConkie',
-    'L. Tom Perry',
-    'David B. Haight',
-    'James E. Faust',
-    'Neal A. Maxwell',
-    'Russell M. Nelson',
-    'Dallin H. Oaks',
-    'M. Russell Ballard',
-    'Joseph B. Wirthlin',
-    'Richard G. Scott',
-    'Robert D. Hales',
-    'Jeffrey R. Holland',
-    'Henry B. Eyring')
-
-
-
 
 def get_scripture_refs(all_data):
     # Retrieve from body text using regular expression and create new dataframe
@@ -349,7 +258,7 @@ def get_ref_counts(ref_df, group):
     swlist = ['OT', 'NT', 'BoM', 'D&C', 'PGP']
 
     sw_refs = ref_df[ref_df['sw'].isin(swlist)]
-    return sw_refs.groupby([group, 'sw']).count()['author'].to_frame('count').unstack()
+    return sw_refs.groupby([group, 'sw']).size().to_frame('count').unstack()
 
 dtutc = lambda x: pandas.to_datetime(x, utc=True)
 
