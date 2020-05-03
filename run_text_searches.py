@@ -29,7 +29,7 @@ parser.add_argument('--search-data', dest='search_data', type=str, default='sear
                     help='JSON file containing search data')
 parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
                     choices=ta_dict.keys(), help='specifies spacing of time axis')
-parser.add_argument('--norm', dest='norm', type=str, default='conf',
+parser.add_argument('--norm', dest='norm', type=str, default='words',
                     choices=nm_dict.keys(), help='specifies normalization factor')
 parser.add_argument('--smooth', dest='smooth', type=int, default=None,
                     help='size of window for smoothing')
@@ -49,10 +49,10 @@ searches = json.load(open(search_file))
 talks_only = get_only_talks(load_data())
 talks_only['5 year period'] = talks_only['date'].dt.year.map(lambda x: datetime.date(int(x/5)*5+2, 6, 1))
 
-first_year = talks_only.year.min().year
-last_year = talks_only.year.max().year
-daterange = [datetime.date(first_year, 1, 1),
-             datetime.date(last_year, 4, 1)]
+end_date = talks_only.date.max()
+daterange = [datetime.date(talks_only.date.min().year, 1, 1),
+             datetime.date(end_date.year, end_date.month+2, 30+1*(end_date.month>6))]
+
 group = ta_dict[args.time_axis]
 yaxis_str = nm_dict[args.norm]
 
@@ -88,7 +88,7 @@ for search in searches:
             results[l] = sums['matches']/sums['word_count']*1e6
         if 'author analysis' in search.keys() and search['author analysis']=='true':
             author_count = talks_only.join(matches.to_frame('matches')).groupby('author').sum()['matches']
-            print(author_count.sort_values().to_frame(s['label'])[:-6:-1])
+            print(author_count.sort_values().to_frame(l)[:-6:-1])
 
     if 'include sum' in search.keys() and search['include sum']=='true':
         results['all combined'] = results.sum(1)
@@ -103,8 +103,8 @@ for search in searches:
         results.plot(ax=ax, style='.', legend=False)
 
     ax.set_xlim(daterange)
-    ax.xaxis.set_major_locator(mdates.YearLocator(10))
-    ax.xaxis.set_minor_locator(mdates.YearLocator(5))
+    #ax.xaxis.set_major_locator(mdates.YearLocator(10))
+    #ax.xaxis.set_minor_locator(mdates.YearLocator(5))
     if 'start year' in search.keys():
         ax.set_xlim(left=datetime.date(search['start year'], 4, 1))
     ax.set_ylim(bottom=0)

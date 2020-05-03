@@ -18,7 +18,8 @@ tree = html.fromstring(page.content)
 wiki_text = tree.xpath("//textarea/text()")
 df = pandas.DataFrame(wiki_text[0].split('\n'), columns=('col',))
 
-df = df[df.col.str.startswith(' |')]
+df.col = df.col.str.strip()
+df = df[df.col.str.startswith('|')]
 df = df.col.str.split('=', 1, expand=True)
 df.columns = ('key', 'val')
 
@@ -34,12 +35,12 @@ df = df.replace({'name': {'Stephen L Richards': 'Stephen L. Richards',
 df2 = df.set_index('name')
 df3 = df2.reset_index()
 
-dob_regex = '(\|[0-9]*\|[0-9]*\|[0-9]*)'
+date_regex = '(\|[0-9]*\|[0-9]*\|[0-9]*)'
 date_fmt = '|%Y|%m|%d'
-dobs = df2[df2.key=='birth_date']['val'].str.extract(dob_regex, expand=False)
+dobs = df2[df2.key=='birth_date']['val'].str.extract(date_regex, expand=False)
 dob = pandas.to_datetime(dobs, format=date_fmt).to_frame('dob').drop_duplicates()
 
-dods = df2[df2.key=='death_date']['val'].str.extract(dob_regex, expand=False)
+dods = df2[df2.key=='death_date']['val'].str.extract(date_regex, expand=False)
 dod = pandas.to_datetime(dods, format=date_fmt).to_frame('dod').drop_duplicates()
 
 posidx = df3[df3.key.str.contains('position_or_quorum') &
@@ -48,11 +49,11 @@ posidx = df3[df3.key.str.contains('position_or_quorum') &
 df4 = ('start_date' + posidx.key.str[-1]).to_frame().join(posidx[['name']])
 
 merged = pandas.merge(df3, df4, on=('name', 'key'))
-merged['sdate'] = pandas.to_datetime(merged.val.str.extract(dob_regex, expand=False), format=date_fmt)
+merged['sdate'] = pandas.to_datetime(merged.val.str.extract(date_regex, expand=False), format=date_fmt)
 sdate = merged[['name', 'sdate']].sort_values(['name', 'sdate']).groupby('name').first().sort_values('sdate')
 
 apostle_data = dob.join(dod).join(sdate)
-apostle_data['edate'] = apostle_data['dod']
+apostle_data = apostle_data.assign(edate=apostle_data['dod'])
 
 #notes = df2[df2.key=='list_notes'].val.str.replace('[\[|\]]', '').to_frame('notes')
 #apostle_data = apostle_data.join(notes).drop_duplicates()
@@ -75,8 +76,11 @@ apostle_data.loc['Gary E. Stevenson', 'sdate'] += dateoffset
 apostle_data.loc['Dale G. Renlund', 'sdate'] += dateoffset*2
 apostle_data.loc['Ulisses Soares', 'sdate'] += dateoffset
 
+# Set start date for Joseph Smith
+apostle_data.loc['Joseph Smith', 'sdate'] = datetime.datetime(1830, 4, 6)
+
 # Remove start dates for those who never were part of the seniority list
-remove_list = ['Jedediah M. Grant', 'Joseph Angell Young', 'Daniel H. Wells']
+remove_list = ['Jedediah M. Grant', 'Joseph Angell Young', 'Daniel H. Wells', 'Hyrum Smith']
 apostle_data.loc[remove_list, 'sdate'] = None
 apostle_data.loc[apostle_data['sdate'].isna(), 'edate'] = None
 
@@ -84,6 +88,7 @@ apostle_data.loc[apostle_data['sdate'].isna(), 'edate'] = None
 # These could probably be extracted from the raw data.
 apostle_data.loc['John F. Boynton', 'edate'] = datetime.datetime(1837, 12, 3)
 apostle_data.loc['William E. McLellin', 'edate'] = datetime.datetime(1838, 5, 11)
+apostle_data.loc['Thomas B. Marsh', 'edate'] = datetime.datetime(1839, 3, 17)
 apostle_data.loc['William Smith', 'edate'] = datetime.datetime(1845, 10, 6)
 apostle_data.loc['Albert Carrington', 'edate'] = datetime.datetime(1885, 11, 7)
 apostle_data.loc['John Willard Young', 'edate'] = datetime.datetime(1891, 10, 3)
@@ -102,8 +107,9 @@ apostle_data = apostle_data.sort_values('sdate', na_position='first')
 # Compute start/end dates for presidents of the church
 pres_data = apostle_data.reset_index()
 pres_data = pres_data[~pres_data['sdate'].isna()]
-pres_data.loc[pres_data.name=='Brigham Young', 'sdate_p'] = datetime.datetime(1847, 12, 27)
-pres_data.loc[pres_data.name=='Brigham Young', 'edate_p'] = pres_data.loc[pres_data.name=='Brigham Young', 'edate']
+idx = pres_data.name=='Joseph Smith'
+pres_data.loc[idx, 'sdate_p'] = pres_data.loc[idx, 'sdate']
+pres_data.loc[idx, 'edate_p'] = pres_data.loc[idx, 'edate']
 cur_idx = pres_data.first_valid_index()
 
 while pres_data.loc[cur_idx, 'edate'] < datetime.datetime.today():
