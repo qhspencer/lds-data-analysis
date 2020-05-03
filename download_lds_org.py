@@ -22,7 +22,8 @@ url_base = 'https://www.churchofjesuschrist.org'
 for year in range(start_date, end_date):
     for month in [4, 10]:
         outfile = 'data_lds_org/{0}.{1:02d}.json'.format(year, month)
-        if overwrite or not os.path.exists(outfile):
+        date_in_future = datetime.date(year, month, 1) > datetime.date.today()
+        if (overwrite or not os.path.exists(outfile)) and not date_in_future:
             url = '{0}/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)
             print(url)
             print('=== processing conference: {0:d}-{1:02d}'.format(year, month))
@@ -36,7 +37,8 @@ for year in range(start_date, end_date):
             for t in talks:
                 page = requests.get(url_base + t)
                 page.encoding = 'UTF-8'
-                tree = html.fromstring(page.text)
+                page_text = page.text.replace(u'\ufeff', '')
+                tree = html.fromstring(page_text)
                 title = clean_join_strings(tree.xpath("//*[@id='title1' or @id='subtitle1']//text()"))
                 if title!='':
                     # Note: checking some older talks showed the author tags may be different.
@@ -47,10 +49,11 @@ for year in range(start_date, end_date):
                     if author_title=='' and author.startswith('President '):
                         author_title = 'President of the Church'
                     body = clean_strings(tree.xpath("//div[@class='body-block']//text()[not(parent::sup)]"))
-                    scripture_refs = clean_strings(tree.xpath("//a[@class='scripture-ref']//text()"))
+                    scripture_refs = clean_strings(tree.xpath("//aside[contains(@class,'sidePanel')]//a//text()"))
+                    all_ref_data = clean_strings(tree.xpath("//aside[contains(@class,'sidePanel')]//p//text()"))
                     all_refs = []
                     cur_ref = ''
-                    for ref_str in clean_strings(tree.xpath("//*[@class='notes']//li//text()")):
+                    for ref_str in all_ref_data:
                         cur_ref += ref_str
                         if ref_str.endswith('.'):
                             all_refs.append(cur_ref)
