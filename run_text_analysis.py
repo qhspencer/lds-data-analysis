@@ -62,8 +62,17 @@ misc_words = ['twenty', 'thousand', 'simply', 'hundred', 'described', 'area', 'e
 skip_words = short_words + names + misc_words
     
 
-def decade_analysis(dataframe, column, min_length=5, min_total=200):
-    vals = dataframe[column].apply(pandas.Series).stack().to_frame('value')
+def decade_analysis(dataframe, N, min_length=5, min_total=200):
+
+    if N==1:
+        df = dataframe
+        col = 'words'
+    else:
+        df = dataframe[['decade']].join(
+            dataframe.words.apply(lambda x: [' '.join(y) for y in
+                                             nltk.ngrams(x, N)]).to_frame('Ngrams'))
+        col = 'Ngrams'
+    vals = df[col].apply(pandas.Series).stack().to_frame('value')
     vals = vals[vals['value'].str.len()>=min_length]
     vals.index = vals.index.get_level_values(0)
     vals = vals.join(dataframe[['decade']])
@@ -97,17 +106,15 @@ talks_only['3grams'] = talks_only.words.apply(lambda x: [' '.join(y) for y in nl
 talks_only['4grams'] = talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 4)])
 
 print('single word analysis')
-single_word_table = decade_analysis(talks_only, 'words')
+single_word_table = decade_analysis(talks_only, 1)
+gc.collect()
 print('2-gram analysis')
-double_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 2)]).to_frame('2grams')),
-    '2grams', 8)
+double_word_table = decade_analysis(talks_only, 2, 8)
+gc.collect()
 print('3-gram analysis')
-triple_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 3)]).to_frame('3grams')),
-    '3grams', 10)
+triple_word_table = decade_analysis(talks_only, 3, 10)
+gc.collect()
 print('4-gram analysis')
-quad_word_table = decade_analysis(talks_only[['decade']].join(
-    talks_only.words.apply(lambda x: [' '.join(y) for y in nltk.ngrams(x, 4)]).to_frame('4grams')),
-    '4grams', 12)
+quad_word_table = decade_analysis(talks_only, 4, 12)
+gc.collect()
 

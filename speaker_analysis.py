@@ -28,12 +28,12 @@ pl.rcParams['figure.max_open_warning'] = 50
 pl.style.use(args.mpl_style)
 
 output_dir = args.output_dir + '/'
-print "Loading data"
+print("Loading data")
 df_all = load_data(source=args.ds)
 
 talks_only = get_only_talks(df_all)
 talks_only = talks_only.assign(President=0)
-talks_only['not_president'] = talks_only['author']!=talks_only['president']
+talks_only['not_president'] = talks_only['rank']>1
 for pres in talks_only['president'].unique():
     pres2 = 'President ' + pres.split(' ')[-1]
     pres_idx = talks_only['president']==pres
@@ -49,12 +49,14 @@ apostle_list = [
     'Gerrit W. Gong', 'David A. Bednar', 'Ronald A. Rasband']
 dead_apostle_list = [
     'Boyd K. Packer', 'Neal A. Maxwell', 'Bruce R. McConkie', 'James E. Faust']
-dead_pres_list = president_list
-#dead_pres_list.remove('Russell M. Nelson')
+
+talks_only.loc[talks_only.date>pandas.to_datetime('2020-01-01', utc=True),
+               'decade'] = pandas.to_datetime('2015-01-01', utc=True)
 
 #####
 
-speaker_refs = talks_only[['year', 'month', 'author_title', 'author', 'word_count', 'President', 'not_president']]
+speaker_refs = talks_only[['year', 'month', 'decade', 'author_title', 'author', 'word_count',
+                           'President', 'not_president']]
 speaker_refs = speaker_refs.assign(Jesus=talks_only.body.str.count('Jesus') + \
                                    talks_only.body.str.count('Christ') - \
                                    talks_only.body.str.count('Jesus Christ') + \
@@ -69,7 +71,7 @@ speaker_refs = speaker_refs.assign(Satan=talks_only.body.str.count('Satan') + \
 speaker_refs = speaker_refs.assign(grace=talks_only.body.str.count('(grace|mercy|mercies|merciful)'))
 speaker_refs = speaker_refs.assign(works=talks_only.body.str.count(
     '(obey|obedient|qualify|qualified|worthy|worthiness)'))
-
+#commandment?, atonement?
 
 col_list = ['Jesus', 'Satan', 'grace', 'works', 'President']
 
@@ -80,12 +82,28 @@ speaker_averages['President'] = speaker_sum['President']/speaker_sum['word_count
 ## This version normalizes by talk rather than by word count
 #speaker_averages = speaker_refs.groupby('author').mean()
 
+
+speaker_sum2 = speaker_refs.groupby(['author', 'decade']).sum().drop('not_president', 1)
+speaker_sum2['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby(
+    ['author', 'decade']).sum()['word_count']
+speaker_sum2 = speaker_sum2.reset_index()
+q15_sum2 = speaker_sum2[speaker_sum2['author'].isin(apostle_list)].set_index(
+    ['author', 'decade']).drop(['month'], 1)
+talk_count = talks_only.groupby(['author', 'decade']).size().to_frame('talk_count')
+q15_averages2 = (q15_sum2[col_list].divide(q15_sum2['word_count'], 0)*1000).join(talk_count)
+#speaker_averages2 = speaker_sum2[col_list].divide(speaker_sum2['word_count'], 0)*1000
+
+
+
+
+
+
 talk_counts = talks_only.groupby('author').count()['index'].to_frame()
 talk_counts.columns = ['count']
 speaker_averages = speaker_averages.join(talk_counts).fillna(0)
 
 q15_averages = speaker_averages[speaker_averages.index.isin(apostle_list)]
-pres_averages = speaker_averages[speaker_averages.index.isin(dead_pres_list)]
+pres_averages = speaker_averages[speaker_averages.index.isin(president_list)]
 prev_q15_averages = speaker_averages[speaker_averages.index.isin(dead_apostle_list)]
 
 note_data = q15_averages.append(pres_averages).append(prev_q15_averages).assign(ha='right', va='bottom')
@@ -120,12 +138,12 @@ note_data['ha'] = 'right'
 note_data['va'] = 'bottom'
 note_data['r'] = 0
 note_data.loc[
-    ['Renlund', 'Rasband', 'Monson', 'Cook', 'Hinckley', 'Bednar', 'Faust', 'Nelson',
-     'Hunter', 'Smith', 'Stevenson', 'Benson', 'McKay', 'McConkie', 'Oaks', 'Holland',
+    ['Renlund', 'Monson', 'Cook', 'Hinckley', 'Bednar', 'Faust', 'Nelson', 'Eyring',
+     'Hunter', 'Smith', 'Stevenson', 'McConkie', 'Oaks', 'Holland',
      'Uchtdorf', 'Andersen'], 'ha'] = 'left'
 note_data.loc[
-    ['Christofferson', 'Cook', 'Oaks', 'Hinckley', 'Eyring', 'Faust', 'Lee',
-     'Holland', 'Andersen', 'Soares', 'Stevenson', 'Monson', 'Ballard', 'Kimball'], 'va'] = 'top'
+    ['Christofferson', 'Cook', 'Oaks', 'Hinckley', 'Faust', 'McKay', 'Benson',
+     'Holland', 'Andersen', 'Soares', 'Monson', 'Ballard', 'Kimball'], 'va'] = 'top'
 titlestr = 'Jesus and Satan references (per 1000 words)\n by recent apostles and church presidents'
 create_fig('Jesus', 'Satan', note_data, titlestr, 'jesus_vs_satan.png')
 
@@ -134,11 +152,12 @@ create_fig('Jesus', 'Satan', note_data, titlestr, 'jesus_vs_satan.png')
 note_data['ha'] = 'left'
 note_data['va'] = 'bottom'
 note_data['r'] = 0
-note_data.loc[['Gong', 'Soares', 'Monson', 'Maxwell', 'Benson', 'Smith', 'Ballard'], 'ha'] = 'right'
-note_data.loc[['Hinckley', 'McConkie', 'Ballard'], 'ha'] = 'center'
-note_data.loc[['Renlund', 'Hunter', 'Ballard', 'Bednar', 'Lee', 'Benson', 'Maxwell', 'Hinckley'], 'va'] = 'top'
-note_data.loc[['Benson', 'Eyring'], 'r'] = 20
-note_data.loc[['Oaks', 'Christofferson', 'Maxwell'], 'r'] = 10
+note_data.loc[['Gong', 'Cook', 'McKay', 'Lee', 'Soares', 'Kimball', 'Benson', 'Smith', 'Ballard'], 'ha'] = 'right'
+note_data.loc[['Hinckley'], 'ha'] = 'center'
+note_data.loc[['Cook', 'Renlund', 'Monson', 'Hunter', 'Ballard', 'Lee', 'Maxwell', 'Kimball', 'Hinckley'], 'va'] = 'top'
+note_data.loc[['Eyring', 'Holland'], 'r'] = 15
+note_data.loc[['GASmith'], 'r'] = 10
+note_data.loc[['Oaks', 'Christofferson', 'Bednar'], 'r'] = 5
 titlestr = 'Jesus and church president references (per 1000 words)\n by recent apostles and church presidents'
 create_fig('Jesus', 'President', note_data, titlestr, 'jesus_vs_pres.png')
 
@@ -147,12 +166,12 @@ create_fig('Jesus', 'President', note_data, titlestr, 'jesus_vs_pres.png')
 note_data['ha'] = 'left'
 note_data['va'] = 'bottom'
 note_data['r'] = 0
-note_data.loc[note_data['grace']>1.0, 'ha'] = 'right'
-note_data.loc[['Christofferson', 'Monson', 'McConkie', 'Hunter', 'Maxwell',
-               'Hinckley', 'Grant', 'Andersen', 'McKay', 'Faust', 'Smith'], 'va'] = 'top'
+note_data.loc[note_data['grace']>1.2, 'ha'] = 'right'
+note_data.loc[['Christofferson', 'Monson', 'McConkie', 'Hunter', 'Maxwell', 'Uchtdorf',
+               'Hinckley', 'Andersen', 'McKay', 'Faust', 'Smith'], 'va'] = 'top'
 note_data.loc[['Hinckley'], 'ha'] = 'center'
-note_data.loc[['Ballard', 'Kimball'], 'r'] = 5
-note_data.loc[['Lee'], 'r'] = 10
+note_data.loc[['Oaks', 'Cook'], 'r'] = 5
+note_data.loc[['Lee', 'Ballard'], 'r'] = 10
 titlestr = 'grace and works references (per 1000 words)\n by recent apostles and church presidents'
 create_fig('grace', 'works', note_data, titlestr, 'grace_vs_works.png')
 
