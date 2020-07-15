@@ -1,7 +1,7 @@
 {"name":"Oliver Cowdery","dob":"1806-10-03T00:00:00.000Z","dod":"1850-03-03T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
 {"name":"David Whitmer","dob":"1805-01-07T00:00:00.000Z","dod":"1888-01-25T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
 {"name":"Martin Harris","dob":"1783-05-18T00:00:00.000Z","dod":"1875-07-10T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
-{"name":"Hyrum Smith","dob":"1800-02-09T00:00:00.000Z","dod":null,"sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
+{"name":"Hyrum Smith","dob":"1800-02-09T00:00:00.000Z","dod":"1844-06-27T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
 {"name":"Jedediah M. Grant","dob":"1816-02-21T00:00:00.000Z","dod":"1856-12-01T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
 {"name":"Daniel H. Wells","dob":"1814-10-27T00:00:00.000Z","dod":"1891-03-24T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
 {"name":"Joseph Angell Young","dob":"1834-10-14T00:00:00.000Z","dod":"1875-08-05T00:00:00.000Z","sdate":null,"edate":null,"sdate_p":null,"edate_p":null}
@@ -15,7 +15,7 @@
 {"name":"David W. Patten","dob":"1799-11-14T00:00:00.000Z","dod":"1838-10-25T00:00:00.000Z","sdate":"1835-02-15T00:00:00.000Z","edate":"1838-10-25T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"William Smith","dob":"1811-03-13T00:00:00.000Z","dod":"1893-11-13T00:00:00.000Z","sdate":"1835-02-15T00:00:00.000Z","edate":"1845-10-06T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Parley P. Pratt","dob":"1807-04-12T00:00:00.000Z","dod":"1857-05-13T00:00:00.000Z","sdate":"1835-02-21T00:00:00.000Z","edate":"1857-05-13T00:00:00.000Z","sdate_p":null,"edate_p":null}
-{"name":"Thomas B. Marsh","dob":"1800-11-01T00:00:00.000Z","dod":null,"sdate":"1835-04-25T00:00:00.000Z","edate":"1839-03-17T00:00:00.000Z","sdate_p":null,"edate_p":null}
+{"name":"Thomas B. Marsh","dob":"1800-11-01T00:00:00.000Z","dod":"1866-01-01T00:00:00.000Z","sdate":"1835-04-25T00:00:00.000Z","edate":"1839-03-17T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"John Taylor","dob":"1808-11-01T00:00:00.000Z","dod":"1887-07-25T00:00:00.000Z","sdate":"1838-12-19T00:00:00.000Z","edate":"1887-07-25T00:00:00.000Z","sdate_p":"1877-08-30T00:00:00.000Z","edate_p":"1887-07-25T00:00:00.000Z"}
 {"name":"John E. Page","dob":"1799-02-25T00:00:00.000Z","dod":"1867-10-14T00:00:00.000Z","sdate":"1838-12-19T00:00:00.000Z","edate":"1867-10-14T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Wilford Woodruff","dob":"1807-03-01T00:00:00.000Z","dod":"1898-09-02T00:00:00.000Z","sdate":"1839-04-26T00:00:00.000Z","edate":"1898-09-02T00:00:00.000Z","sdate_p":"1887-07-26T00:00:00.000Z","edate_p":"1898-09-02T00:00:00.000Z"}
@@ -64,7 +64,7 @@
 {"name":"Joseph F. Merrill","dob":"1868-08-24T00:00:00.000Z","dod":"1952-02-03T00:00:00.000Z","sdate":"1931-10-08T00:00:00.000Z","edate":"1952-02-03T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Charles A. Callis","dob":"1865-05-04T00:00:00.000Z","dod":"1947-01-21T00:00:00.000Z","sdate":"1933-10-12T00:00:00.000Z","edate":"1947-01-21T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Alonzo A. Hinckley","dob":"1870-04-23T00:00:00.000Z","dod":"1936-12-22T00:00:00.000Z","sdate":"1934-10-11T00:00:00.000Z","edate":"1936-12-22T00:00:00.000Z","sdate_p":null,"edate_p":null}
-{"name":"J. Reuben Clark","dob":"1871-09-01T00:00:00.000Z","dod":"1961-10-06T00:00:00.000Z","sdate":"1934-10-11T00:00:00.000Z","edate":"1961-10-06T00:00:00.000Z","sdate_p":null,"edate_p":null}
+{"name":"J. Reuben Clark, Jr.","dob":"1871-09-01T00:00:00.000Z","dod":"1961-10-06T00:00:00.000Z","sdate":"1934-10-11T00:00:00.000Z","edate":"1961-10-06T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Albert E. Bowen","dob":"1875-10-31T00:00:00.000Z","dod":"1953-07-15T00:00:00.000Z","sdate":"1937-04-08T00:00:00.000Z","edate":"1953-07-15T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Sylvester Q. Cannon","dob":"1877-06-10T00:00:00.000Z","dod":"1943-05-29T00:00:00.000Z","sdate":"1938-04-06T00:00:00.000Z","edate":"1943-05-29T00:00:00.000Z","sdate_p":null,"edate_p":null}
 {"name":"Harold B. Lee","dob":"1899-03-28T00:00:00.000Z","dod":"1973-12-26T00:00:00.000Z","sdate":"1941-04-10T00:00:00.000Z","edate":"1973-12-26T00:00:00.000Z","sdate_p":"1972-07-03T00:00:00.000Z","edate_p":"1973-12-26T00:00:00.000Z"}

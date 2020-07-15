@@ -58,41 +58,7 @@ yaxis_str = nm_dict[args.norm]
 
 
 for search in searches:
-    print('running search:', search['search'])
-    if 'case sensitive' in search.keys() and search['case sensitive']=='true':
-        cs = True
-    else:
-        cs = False
-    results = pandas.DataFrame()
-
-    for s in search['search']:
-        if cs:
-            matches = talks_only['body'].str.count(s['include'])
-        else:
-            matches = talks_only['body'].str.lower().str.count(s['include'])
-        if 'exclude' in s.keys():
-            for excl_str in s['exclude']:
-                if cs:
-                    matches -= talks_only['body'].str.count(excl_str)
-                else:
-                    matches -= talks_only['body'].str.lower().str.count(excl_str)
-
-        if 'label' in s.keys():
-            l = s['label']
-        else:
-            l = s['include']
-        if args.norm == 'conf':
-            results[l] = talks_only.assign(matches=matches).groupby(group).sum()['matches']
-        else:
-            sums = talks_only.assign(matches=matches).groupby(group).sum()
-            results[l] = sums['matches']/sums['word_count']*1e6
-        if 'author analysis' in search.keys() and search['author analysis']=='true':
-            author_count = talks_only.join(matches.to_frame('matches')).groupby('author').sum()['matches']
-            print(author_count.sort_values().to_frame(l)[:-6:-1])
-
-    if 'include sum' in search.keys() and search['include sum']=='true':
-        results['all combined'] = results.sum(1)
-
+    results = text_search(talks_only, search, group, args.norm)
 
     fig, ax = pl.subplots(figsize=(12,5))
     if args.smooth==None:

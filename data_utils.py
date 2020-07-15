@@ -9,6 +9,8 @@ ndash = u'\u2013'
 mdash = u'\u2014'
 nbsp = u'\xa0'
 rsqm = u'\u2019'
+ldqm = u'\u201c'
+rdqm = u'\u201d'
 
 apostle_data_loc = 'data/apostles.json'
 
@@ -31,9 +33,15 @@ def clean_strings(strings):
 def clean_join_strings(strings):
     return ' '.join(clean_strings(strings)).strip()
 
+def shorten_name(name_str):
+    '''Converts first name to initial in order to shorten the string'''
+    no_jr = name_str.replace(', Jr.', '')
+    split_name = no_jr.split(' ')
+    return ' '.join([split_name[0][0] + '.'] + split_name[1:])
+
 
 clean_author_dict = {
-    '^(President|Elder|Bishop|Sister|Brother) ': '',
+    '^(President|Elder|Bishop|Sister|Brother|Patriarch) ': '',
     '.* Grant Bangerter': 'W. Grant Bangerter',
     'Wm.': 'William',
     'Elaine Cannon':'Elaine A. Cannon',
@@ -50,7 +58,47 @@ clean_author_dict = {
     'Ellen W. Smoot': 'Mary Ellen W. Smoot',
     'Michael J. Teh':'Michael John U. Teh',
     'Teddy E. Brewerton':'Ted E. Brewerton',
+    'William L. Critchlow, Jr.':'William J. Critchlow, Jr.',
+    'M. Russell Ballard, Jr.': 'M. Russell Ballard',
+    'Legrand R. Curtis, Jr.': 'Legrand R. Curtis',
+    'Franklin Dewey Richards': 'Franklin D. Richards',
+    'Stephen L Richards': 'Stephen L. Richards',
+    'Albert Theodore Tuttle': 'A. Theodore Tuttle',
+    '(?<=[^,]) Jr.':', Jr.'
 }
+
+standard_work_dict = {
+    # Pearl of Great Price
+    'A of F':'PGP', u'JS'+mdash+'H':'PGP', 'Moses':'PGP',
+    'Abr.':'PGP', u'JS'+mdash+'M':'PGP',
+    # Book of Mormon
+    '1 Ne.':'BoM', '2 Ne.':'BoM', 'Jacob':'BoM', 'Enos':'BoM',
+    'Jarom':'BoM', 'Omni':'BoM', 'Mosiah':'BoM', 'Alma':'BoM',
+    'Hel.':'BoM', '3 Ne.':'BoM', '4 Ne.':'BoM','Morm.':'BoM',
+    'Ether':'BoM', 'Moro.':'BoM', 'W of M':'BoM',
+    # Old Testament
+    'Gen.':'OT', 'Ex.':'OT', 'Lev.':'OT', 'Num.':'OT', 'Deut.':'OT',
+    '1 Sam.':'OT', '2 Sam.':'OT', '1 Chr.':'OT', '2 Chr.':'OT',
+    'Eccl.':'OT', '1 Kgs.':'OT', '2 Kgs.':'OT', 'Esth.':'OT',
+    'Ruth':'OT', 'Zech.':'OT', 'Joel':'OT', 'Micah':'OT',
+    'Ps.':'OT', 'Prov.':'OT', 'Josh.':'OT', 'Judg.':'OT',
+    'Mal.':'OT', 'Isa.':'OT', 'Jer.':'OT', 'Dan.':'OT',
+    'Amos':'OT', 'Ezek.':'OT', 'Job':'OT', 'Hosea':'OT',
+    'Ezra':'OT', 'Obad.':'OT', 'Neh.':'OT', 'Esth.':'OT',
+    'Jonah':'OT', 'Hab.':'OT', 'Nahum':'OT', 'Zeph.':'OT',
+    'Hag.':'OT', 'Lam.':'OT', 'Song':'OT',
+    # New Testament
+    'Matt.':'NT', 'Mark':'NT', 'Luke':'NT', 'John':'NT', 'Acts':'NT',
+    'Rom.':'NT', '1 Cor.':'NT', '2 Cor.':'NT', 'Eph.':'NT',
+    'Gal.':'NT', 'James':'NT', 'Heb.':'NT', '1 Tim.':'NT',
+    '2 Tim.':'NT', '1 Pet.':'NT', '2 Pet.':'NT', '1 Jn.':'NT',
+    '2 Jn.':'NT', '3 Jn.':'NT', 'Titus':'NT', '1 Thes.':'NT',
+    '2 Thes.':'NT', 'Phil.':'NT', 'Jude':'NT', 'Col.':'NT',
+    'Philem.':'NT',
+    'Rev.':'NT',
+    # JST stuff
+    'JST, Matt.':'NT', 'Matt.footnote a':'NT',
+    'JST, Gen.':'OT', 'JST, Mark':'NT'}
 
 def load_apostle_data():
     date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
@@ -219,35 +267,6 @@ def get_scripture_refs(all_data):
 #    ref_df = ref_df[(ref_df['ref'].str.len()>2) & (ref_df['ref'].str.len()<40)]
 
     ref_df['book'] = ref_df['ref'].str.replace(' [0-9]*\:[-0-9, ]*','').str.strip(' ')
-
-
-    standard_work_dict = {
-        'A of F':'PGP', u'JS'+mdash+'H':'PGP', 'Moses':'PGP', 'Abr.':'PGP', u'JS'+mdash+'M':'PGP',
-        '1 Ne.':'BoM', '2 Ne.':'BoM', 'Jacob':'BoM', 'Enos':'BoM',
-        'Jarom':'BoM', 'Omni':'BoM', 'Mosiah':'BoM', 'Alma':'BoM',
-        'Hel.':'BoM', '3 Ne.':'BoM', '4 Ne.':'BoM','Morm.':'BoM',
-        'Ether':'BoM', 'Moro.':'BoM', 'W of M':'BoM',
-        'Gen.':'OT', 'Ex.':'OT', 'Lev.':'OT', 'Num.':'OT', 'Deut.':'OT',
-        '1 Sam.':'OT', '2 Sam.':'OT', '1 Chr.':'OT', '2 Chr.':'OT',
-        'Eccl.':'OT', '1 Kgs.':'OT', '2 Kgs.':'OT', 'Esth.':'OT',
-        'Ruth':'OT', 'Zech.':'OT', 'Joel':'OT', 'Micah':'OT',
-        'Ps.':'OT', 'Prov.':'OT', 'Josh.':'OT', 'Judg.':'OT',
-        'Mal.':'OT', 'Isa.':'OT', 'Jer.':'OT', 'Dan.':'OT',
-        'Amos':'OT', 'Ezek.':'OT', 'Job':'OT', 'Hosea':'OT',
-        'Ezra':'OT', 'Obad.':'OT', 'Neh.':'OT', 'Esth.':'OT',
-        'Jonah':'OT', 'Hab.':'OT', 'Nahum':'OT', 'Zeph.':'OT',
-        'Hag.':'OT', 'Lam.':'OT', 'Song':'OT',
-        'Matt.':'NT', 'Mark':'NT', 'Luke':'NT', 'John':'NT', 'Acts':'NT',
-        'Rom.':'NT', '1 Cor.':'NT', '2 Cor.':'NT', 'Eph.':'NT',
-        'Gal.':'NT', 'James':'NT', 'Heb.':'NT', '1 Tim.':'NT',
-        '2 Tim.':'NT', '1 Pet.':'NT', '2 Pet.':'NT', '1 Jn.':'NT',
-        '2 Jn.':'NT', '3 Jn.':'NT', 'Titus':'NT', '1 Thes.':'NT',
-        '2 Thes.':'NT', 'Phil.':'NT', 'Jude':'NT', 'Col.':'NT',
-        'Philem.':'NT',
-        'Rev.':'NT',
-        'JST, Matt.':'NT', 'Matt.footnote a':'NT',
-        'JST, Gen.':'OT', 'JST, Mark':'NT'}
-
     ref_df['sw'] = ref_df['book'].replace(standard_work_dict)
     return ref_df
 
@@ -343,3 +362,148 @@ def get_only_talks(df):
 
     return df[df['title'].str.contains(
         '|'.join(exclude_list))==False]
+
+def get_speaker_refs(df, data=None):
+    talks_only = df.assign(President=0)
+    talks_only['not_president'] = talks_only['rank']>1
+
+    for pres in talks_only['president'].unique():
+        pres2 = 'President ' + pres.split(' ')[-1]
+        pres_idx = talks_only['president']==pres
+        talks_only.loc[pres_idx, 'President'] = talks_only[pres_idx].body.str.count(pres) + \
+                                                talks_only[pres_idx].body.str.count(pres2)
+
+    # Add April 2020 to the 2010s decade for simplicity. To be removed eventually ...
+    talks_only.loc[talks_only.date>pandas.to_datetime('2020-01-01', utc=True),
+                   'decade'] = pandas.to_datetime('2015-01-01', utc=True)
+
+    speaker_refs = talks_only[['year', 'month', 'decade', 'author_title', 'author',
+                               'word_count', 'President', 'not_president']]
+    speaker_refs = speaker_refs.assign(
+        Jesus=talks_only.body.str.count('Jesus') + \
+        talks_only.body.str.count('Christ') - \
+        talks_only.body.str.count('Jesus Christ') + \
+        talks_only.body.str.count('Savior') + \
+        talks_only.body.str.count('Redeemer') + \
+        talks_only.body.str.count('Master') - \
+	talks_only.body.str.count('[Cc]hurch of Jesus Christ') - \
+        talks_only.body.str.count('Jesus Christ.{0,20} [Aa]men') - \
+        talks_only.body.str.count('Jesus is the Christ'))
+    speaker_refs = speaker_refs.assign(
+        Satan=talks_only.body.str.count('Satan') + \
+        talks_only.body.str.count('Lucifer') + \
+        talks_only.body.str.count('the [Dd]evil') + \
+        talks_only.body.str.count('the [Aa]dversary'))
+    speaker_refs = speaker_refs.assign(
+        Joseph=talks_only.body.str.count('Prophet Joseph(?! Smith)') + \
+        talks_only.body.str.count('Joseph Smith'))
+
+    if data==None:
+        data = {'grace': ['grace', 'mercy', 'mercies', 'merciful'],
+                'works': ['obey', 'obedient', 'qualify', 'qualified', 'worthy', 'worthiness']}
+    for key, val_list in data.items():
+        speaker_refs[key] = talks_only.body.str.count('('+'|'.join(val_list)+')')
+
+    col_list = ['Jesus', 'Satan', 'President', 'Joseph'] + list(data.keys())
+    speaker_sum = speaker_refs.groupby('author').sum().drop('not_president', 1)
+    speaker_sum['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby('author').sum()['word_count']
+    speaker_averages = speaker_sum[col_list].divide(speaker_sum['word_count'], 0)*1000
+    speaker_averages['President'] = speaker_sum['President']/speaker_sum['word_count_np']*1000
+
+    # include decade
+    #speaker_sum2 = speaker_refs.groupby(['author', 'decade']).sum().drop('not_president', 1)
+    #speaker_sum2['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby(
+    #    ['author', 'decade']).sum()['word_count']
+    #speaker_sum2 = speaker_sum2.reset_index()
+    #q15_sum2 = speaker_sum2[speaker_sum2['author'].isin(apostle_list)].set_index(
+    #    ['author', 'decade']).drop(['month'], 1)
+    #talk_count = talks_only.groupby(['author', 'decade']).size().to_frame('talk_count')
+    #q15_averages2 = (q15_sum2[col_list].divide(q15_sum2['word_count'], 0)*1000).join(talk_count)
+    #speaker_averages2 = speaker_sum2[col_list].divide(speaker_sum2['word_count'], 0)*1000
+
+    talk_counts = talks_only.groupby('author').count()['index'].to_frame()
+    talk_counts.columns = ['count']
+    speaker_averages = speaker_averages.join(talk_counts).fillna(0)
+
+    return speaker_averages
+
+def top_users(talk_data, search_string, N=10, before=None, after=None):
+    matches = talk_data.body.str.lower().str.count(search_string).to_frame(
+        'matches').join(talk_data[['author', 'date']])
+    matches = matches[matches['matches']>0]
+    if before!=None:
+        if type(before)==int:
+            before = str(before) + '-12-31'
+        matches = matches[matches['date']<=before]
+    if after!=None:
+        if type(after)==int:
+            after = str(after) + '-01-01'
+        matches = matches[matches['date']>=after]
+    results = matches.groupby('author').sum().sort_values('matches', ascending=False)
+    results['fraction'] = results['matches']/results['matches'].sum()
+    return results[:N]
+
+def first_users(talk_data, search_string, N=10):
+    matches = talk_data.body.str.count(search_string).to_frame(
+        'matches').join(talk_data[['author', 'date']])
+    matches = matches[matches['matches']>0]
+    return matches.sort_values('date').set_index('date')[:N]
+
+def get_context(talk_data, search_string, chars=10, before=None, after=None):
+    matches = talk_data.body.str.count(search_string)
+    ctx_str = '.{' + str(chars) + '}'
+    refs = talk_data[matches>0].body.str.findall(
+        ctx_str + search_string + ctx_str).apply(pandas.Series).stack().to_frame('ref')
+    refs.index = refs.index.get_level_values(0)
+    return refs.join(talk_data)[['date', 'author', 'ref']]
+
+
+def text_search(talk_data, search_data, group='year', norm='words', spacer=' '):
+    if type(search_data)==str:
+        search = {'search': [{'include': search_data}]}
+    else:
+        search = search_data
+
+    print('running search:', search['search'])
+    if 'case sensitive' in search.keys() and search['case sensitive']=='true':
+        cs = True
+    else:
+        cs = False
+    results = pandas.DataFrame()
+
+    for s in search['search']:
+        if cs:
+            matches = talk_data['body'].str.count(s['include'])
+        else:
+            matches = talk_data['body'].str.lower().str.count(s['include'])
+        if 'exclude' in s.keys():
+            for excl_str in s['exclude']:
+                if cs:
+                    matches -= talk_data['body'].str.count(excl_str)
+                else:
+                    matches -= talk_data['body'].str.lower().str.count(excl_str)
+
+        if 'label' in s.keys():
+            l = s['label']
+        else:
+            l = s['include']
+        if 'top_user' in search.keys() and search['top_user'].lower()=='true':
+            author_counts = talk_data.join(
+                matches.to_frame('matches')).groupby('author')['matches'].sum()
+            l += '{0:s}[{1:s} {2:.0f}%]'.format(
+                spacer,
+                shorten_name(author_counts.index[author_counts.argmax()]),
+                author_counts.max()/author_counts.sum()*100)
+        if norm == 'conf':
+            results[l] = talk_data.assign(matches=matches).groupby(group).sum()['matches']
+        else:
+            sums = talk_data.assign(matches=matches).groupby(group).sum()
+            results[l] = sums['matches']/sums['word_count']*1e6
+        if 'author analysis' in search.keys() and search['author analysis']=='true':
+            author_count = talk_data.join(matches.to_frame('matches')).groupby('author').sum()['matches']
+            print(author_count.sort_values().to_frame(l)[:-6:-1])
+
+    if 'include sum' in search.keys() and search['include sum']=='true':
+        results['all combined'] = results.sum(1)
+
+    return results

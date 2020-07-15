@@ -20,7 +20,7 @@ parser.add_argument('--output-dir', dest='output_dir', type=str, default='.',
                     help='path for saving output files')
 parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
                     choices=['year', 'conf'], help='specifies spacing of time axis')
-parser.add_argument('--data-source', dest='ds', type=str, default='all')
+parser.add_argument('--data-source', dest='ds', type=str, default='file')
 args = parser.parse_args()
 
 # This needs to be set high if a large number of plots are being generated
@@ -32,75 +32,12 @@ print("Loading data")
 df_all = load_data(source=args.ds)
 
 talks_only = get_only_talks(df_all)
-talks_only = talks_only.assign(President=0)
-talks_only['not_president'] = talks_only['rank']>1
-for pres in talks_only['president'].unique():
-    pres2 = 'President ' + pres.split(' ')[-1]
-    pres_idx = talks_only['president']==pres
-    talks_only.loc[pres_idx, 'President'] = talks_only[pres_idx].body.str.count(pres) + \
-                                            talks_only[pres_idx].body.str.count(pres2)
+speaker_averages = get_speaker_refs(talks_only)
 
 president_list = talks_only['president'].unique().tolist()
-apostle_list = [
-    #'Russell M. Nelson',
-    'Ulisses Soares', 'Dieter F. Uchtdorf', 'Henry B. Eyring', 'M. Russell Ballard',
-    'Neil L. Andersen', 'Jeffrey R. Holland', 'Gary E. Stevenson', 'Dallin H. Oaks',
-    'Dale G. Renlund', 'Quentin L. Cook', 'D. Todd Christofferson',
-    'Gerrit W. Gong', 'David A. Bednar', 'Ronald A. Rasband']
-dead_apostle_list = [
-    'Boyd K. Packer', 'Neal A. Maxwell', 'Bruce R. McConkie', 'James E. Faust']
-
-talks_only.loc[talks_only.date>pandas.to_datetime('2020-01-01', utc=True),
-               'decade'] = pandas.to_datetime('2015-01-01', utc=True)
-
-#####
-
-speaker_refs = talks_only[['year', 'month', 'decade', 'author_title', 'author', 'word_count',
-                           'President', 'not_president']]
-speaker_refs = speaker_refs.assign(Jesus=talks_only.body.str.count('Jesus') + \
-                                   talks_only.body.str.count('Christ') - \
-                                   talks_only.body.str.count('Jesus Christ') + \
-                                   talks_only.body.str.count('Savior') - \
-	                           talks_only.body.str.count('[Cc]hurch of Jesus Christ') - \
-                                   talks_only.body.str.count('Jesus Christ.{0,20} [Aa]men') - \
-                                   talks_only.body.str.count('Jesus is the Christ'))
-speaker_refs = speaker_refs.assign(Satan=talks_only.body.str.count('Satan') + \
-                                   talks_only.body.str.count('Lucifer') + \
-                                   talks_only.body.str.count('the [Dd]evil') + \
-                                   talks_only.body.str.count('the [Aa]dversary'))
-speaker_refs = speaker_refs.assign(grace=talks_only.body.str.count('(grace|mercy|mercies|merciful)'))
-speaker_refs = speaker_refs.assign(works=talks_only.body.str.count(
-    '(obey|obedient|qualify|qualified|worthy|worthiness)'))
-#commandment?, atonement?
-
-col_list = ['Jesus', 'Satan', 'grace', 'works', 'President']
-
-speaker_sum = speaker_refs.groupby('author').sum().drop('not_president', 1)
-speaker_sum['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby('author').sum()['word_count']
-speaker_averages = speaker_sum[col_list].divide(speaker_sum['word_count'], 0)*1000
-speaker_averages['President'] = speaker_sum['President']/speaker_sum['word_count_np']*1000
-## This version normalizes by talk rather than by word count
-#speaker_averages = speaker_refs.groupby('author').mean()
-
-
-speaker_sum2 = speaker_refs.groupby(['author', 'decade']).sum().drop('not_president', 1)
-speaker_sum2['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby(
-    ['author', 'decade']).sum()['word_count']
-speaker_sum2 = speaker_sum2.reset_index()
-q15_sum2 = speaker_sum2[speaker_sum2['author'].isin(apostle_list)].set_index(
-    ['author', 'decade']).drop(['month'], 1)
-talk_count = talks_only.groupby(['author', 'decade']).size().to_frame('talk_count')
-q15_averages2 = (q15_sum2[col_list].divide(q15_sum2['word_count'], 0)*1000).join(talk_count)
-#speaker_averages2 = speaker_sum2[col_list].divide(speaker_sum2['word_count'], 0)*1000
-
-
-
-
-
-
-talk_counts = talks_only.groupby('author').count()['index'].to_frame()
-talk_counts.columns = ['count']
-speaker_averages = speaker_averages.join(talk_counts).fillna(0)
+apostle_list = talks_only[(talks_only['date']==talks_only.iloc[-1]['date']) & \
+                          (talks_only['rank']>1) & (talks_only['rank']<20)]['author'].unique().tolist()
+dead_apostle_list = ['Boyd K. Packer', 'Neal A. Maxwell', 'Bruce R. McConkie', 'James E. Faust']
 
 q15_averages = speaker_averages[speaker_averages.index.isin(apostle_list)]
 pres_averages = speaker_averages[speaker_averages.index.isin(president_list)]
