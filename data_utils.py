@@ -447,7 +447,9 @@ def first_users(talk_data, search_string, N=10):
     matches = talk_data.body.str.count(search_string).to_frame(
         'matches').join(talk_data[['author', 'date']])
     matches = matches[matches['matches']>0]
-    return matches.sort_values('date').set_index('date')[:N]
+    matches = matches.sort_values('date').set_index('date')
+    matches.index = pandas.DatetimeIndex(matches.index).strftime('%B %Y')
+    return matches[:N]
 
 def get_context(talk_data, search_string, chars=10, before=None, after=None):
     matches = talk_data.body.str.count(search_string)
@@ -458,13 +460,14 @@ def get_context(talk_data, search_string, chars=10, before=None, after=None):
     return refs.join(talk_data)[['date', 'author', 'ref']]
 
 
-def text_search(talk_data, search_data, group='year', norm='words', spacer=' '):
+def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', quiet=False):
     if type(search_data)==str:
         search = {'search': [{'include': search_data}]}
     else:
         search = search_data
 
-    print('running search:', search['search'])
+    if not quiet:
+        print('running search:', search['search'])
     if 'case sensitive' in search.keys() and search['case sensitive']=='true':
         cs = True
     else:

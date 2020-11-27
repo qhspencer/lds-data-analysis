@@ -1,4 +1,5 @@
-data_lds_org
-data_byu_edu
+data_lds_org/*
+data_byu_edu/*
 *.pyc
 *.pkl
+.ipynb_checkpoints
