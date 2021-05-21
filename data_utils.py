@@ -451,11 +451,10 @@ def first_users(talk_data, search_string, N=10):
     matches.index = pandas.DatetimeIndex(matches.index).strftime('%B %Y')
     return matches[:N]
 
-def get_context(talk_data, search_string, chars=10, before=None, after=None):
+def get_context(talk_data, search_string, before=10, after=10):
     matches = talk_data.body.str.count(search_string)
-    ctx_str = '.{' + str(chars) + '}'
-    refs = talk_data[matches>0].body.str.findall(
-        ctx_str + search_string + ctx_str).apply(pandas.Series).stack().to_frame('ref')
+    regex = '.{{{0:d}}}{1:s}.{{{2:d}}}'.format(before, search_string, after)
+    refs = talk_data[matches>0].body.str.findall(regex).apply(pandas.Series).stack().to_frame('ref')
     refs.index = refs.index.get_level_values(0)
     return refs.join(talk_data)[['date', 'author', 'ref']]
 

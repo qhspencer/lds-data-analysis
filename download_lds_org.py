@@ -24,13 +24,13 @@ for year in range(start_date, end_date):
         outfile = 'data_lds_org/{0}.{1:02d}.json'.format(year, month)
         date_in_future = datetime.date(year, month, 1) > datetime.date.today()
         if (overwrite or not os.path.exists(outfile)) and not date_in_future:
-            url = '{0}/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)
+            url = '{0}/study/general-conference/{1}/{2:02d}?lang=eng'.format(url_base, year, month)
             print(url)
             print('=== processing conference: {0:d}-{1:02d}'.format(year, month))
 
             page = requests.get(url)
             tree = html.fromstring(page.content)
-            links = tree.xpath("//a[@class='lumen-tile__link']/@href")
+            links = tree.xpath("//a[@class='item-3cCP7']/@href")
             talks = [l for l in links if '/media' not in l]
 
             out_list = []
