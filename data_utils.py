@@ -102,7 +102,10 @@ standard_work_dict = {
 
 def load_apostle_data():
     date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
-    return pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
+    df = pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
+    for col in date_cols:
+        df[col] = df[col].dt.tz_localize('UTC')
+    return df
 
 def load_data(source='file'):
     if source=='file' and os.path.exists('conference_data.pkl'):
@@ -174,6 +177,32 @@ def load_data(source='file'):
         if auth in rdict.keys():
             df_all.loc[idx, 'rank'] = rdict[auth]
 
+    # Assign speaker gender based on author_title field, and then
+    # fill in a few with insufficient data to automatically guess it.
+    print('assigning author_gender field')
+    df_all = df_all.assign(author_gender='')
+    df_all.loc[df_all['author'].isin(apostle_data['name'].values), 'author_gender'] = 'M'
+
+    m_list = ['Seventy', 'Twelve', 'Apostle', 'Bishop', 'First Presidency', 'Patriarch',
+              'President of the Church', 'Young Men', 'Sunday School', 'President.*Stake']
+    f_list = ['Relief Society', 'Young Women', 'Primary']
+    for m_str in m_list:
+        df_all.loc[df_all['author_title'].str.contains(m_str), 'author_gender'] = 'M'
+    for f_str in f_list:
+        df_all.loc[df_all['author_title'].str.contains(f_str), 'author_gender'] = 'F'
+
+    # Everyone in these date ranges without an assigned gender is male
+    m_date_ranges = (('19500101', '19720101'), ('19820101', '19860101'), ('19800101', '19810101'))
+    for start_date, end_date in m_date_ranges:
+        df_all.loc[(df_all['author_gender']=='') &
+                   (df_all['date']>=start_date) &
+                   (df_all['date']<=end_date), 'author_gender'] = 'M'
+
+    # Assign one more, and the remaining cases were all female
+    df_all.loc[df_all['author']=='Enzo Serge Petelo', 'author_gender'] = 'M'
+    df_all.loc[(df_all['author_gender']==''), 'author_gender'] = 'F'
+
+    
     if save_file:
         df_all.to_pickle('conference_data.pkl')
         print('wrote conference_data.pkl')
@@ -494,7 +523,7 @@ def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', 
                 matches.to_frame('matches')).groupby('author')['matches'].sum()
             l += '{0:s}[{1:s} {2:.0f}%]'.format(
                 spacer,
-                shorten_name(author_counts.index[author_counts.argmax()]),
+                shorten_name(author_counts.idxmax()),
                 author_counts.max()/author_counts.sum()*100)
         if norm == 'conf':
             results[l] = talk_data.assign(matches=matches).groupby(group).sum()['matches']
