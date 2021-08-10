@@ -12,7 +12,7 @@ As the full text of the general conference addresses are presumed to be copyrigh
 
 ## Code usage
 
-A Jupyter notebook containing examples of how to run the downloaders and use the libraries to analyze text can be found in the document [Using the Python libraries](https://nbviewer.jupyter.org/github/qhspencer/lds-conference-analysis/blob/master/Using\ the\ Python\ libraries.ipynb).
+A Jupyter notebook containing examples of how to run the downloaders and use the libraries to analyze text can be found in the document [Using the Python libraries](https://nbviewer.jupyter.org/github/qhspencer/lds-conference-analysis/blob/master/Using%20the%20Python%20libraries.ipynb).
 
 ## Results
 
