@@ -7,18 +7,25 @@ import sys
 from lxml import html
 from selenium import webdriver
 import time
+import datetime
 from data_utils import *
 import json
+import argparse
 enc = json.JSONEncoder()
 
-if len(sys.argv)>1 and sys.argv[1]=='-o':
-    overwrite = True
-else:
-    overwrite = False
+parser = argparse.ArgumentParser()
+parser.add_argument('--overwrite', dest='overwrite', action='store_true',
+                    help='overwrite stored results if present')
+parser.add_argument('--start-year', dest='start_year', type=int, default=1942,
+                    help='year to start downloads')
+args = parser.parse_args()
 
-# I have not been able to get this to work with the various Windows
-# options, but the Safari driver (on OS X) is working reliably.
-driver = webdriver.Safari()
+if sys.platform=='linux': # This will return "linux" on both Linux and WSL systems
+    # To install the Chrome driver and X server required for WSL, see the instructions
+    # at https://www.gregbrisebois.com/posts/chromedriver-in-wsl2/
+    driver = webdriver.Chrome()
+else: # MacOS: use Safari driver
+    driver = webdriver.Safari()
 
 def parse_talk(tree, year, month):
     xp_prefix = "//div[@id='centercolumn']"
@@ -45,7 +52,7 @@ def parse_talk(tree, year, month):
             author = ''
             author_title = ''
         author = re.sub('By |Presented by ', '', author)
-        body = clean_strings(tree.xpath(xp_prefix + "//div[@id='primary']//text()" + exclude_cites))
+        body = clean_strings(tree.xpath(xp_prefix + "//div[@id='primary' or @class='body-block']//text()" + exclude_cites))
 
     if author_title=='':
         if author.startswith('President '):
@@ -63,7 +70,8 @@ def parse_talk(tree, year, month):
 monthdict = {'April': 4, 'October': 10}
 
 url_base = 'https://scriptures.byu.edu/#:'
-years = range(112, 189)
+years = range(args.start_year-1830,
+              datetime.date.today().year-1829)
 for year in years:
     hyear = hex(year)[2:]
     for mstr in ('', '8'):
@@ -73,7 +81,7 @@ for year in years:
         # Load URL and pause 2 seconds. This number may need to be increased, depending
         # on the computer and the connection, but has generally been sufficient for testing
         driver.get(url)
-        time.sleep(2)
+        time.sleep(3)
         html_txt = driver.execute_script("return document.body.innerHTML")
         tree = html.fromstring(html_txt)
         # Parse the XML tree to find links to each talk in the conference
@@ -91,7 +99,7 @@ for year in years:
         month = monthdict[month]
 
         outfile = 'data_byu_edu/{0}.{1:02d}.json'.format(year, month)
-        if overwrite or not os.path.exists(outfile):
+        if args.overwrite or not os.path.exists(outfile):
             talk_list = tree.xpath('//a/@onclick[contains(.,"getTalk(\'")]')
             json_data = []
             for t in talk_list:

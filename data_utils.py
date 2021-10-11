@@ -103,8 +103,6 @@ standard_work_dict = {
 def load_apostle_data():
     date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
     df = pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
-    for col in date_cols:
-        df[col] = df[col].dt.tz_localize('UTC')
     return df
 
 def load_data(source='file'):
@@ -487,6 +485,14 @@ def get_context(talk_data, search_string, before=10, after=10):
     refs.index = refs.index.get_level_values(0)
     return refs.join(talk_data)[['date', 'author', 'ref']]
 
+def top_contexts(talk_data, search_string, before=1, after=1, N=10):
+    word = '[a-z]*'
+    search_string = (word + ' ')*before + search_string + (' ' + word)*after
+    matches = talk_data.body.str.lower().str.count(search_string)
+    refs = talk_data[matches>0].body.str.lower().str.findall(search_string).apply(pandas.Series).stack().to_frame('ref')
+    counts = refs.groupby('ref').size().sort_values(ascending=False).to_frame('count')
+    counts['fraction'] = counts['count']/counts['count'].sum()
+    return counts[:N]
 
 def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', quiet=False):
     if type(search_data)==str:
