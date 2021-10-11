@@ -137,8 +137,6 @@ def load_data(source='file'):
     df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str), utc=True)
     df_all['year'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(x, 7, 1), utc=True))
     df_all['decade'] = df_all['date'].dt.year.map(lambda x: pandas.to_datetime(datetime.date(int(x/10)*10 + 5, 1, 1), utc=True))
-#    df_all['year'] = df_all['date'].dt.year.map(lambda x: datetime.date(x, 6, 1))
-#    df_all['decade'] = df_all['date'].dt.year.map(lambda x: datetime.date(int(x/10)*10 + 5, 1, 1))
 
     # Clean up strings:
     # standardize author names and remove titles
@@ -399,10 +397,6 @@ def get_speaker_refs(df, data=None):
         pres_idx = talks_only['president']==pres
         talks_only.loc[pres_idx, 'President'] = talks_only[pres_idx].body.str.count(pres) + \
                                                 talks_only[pres_idx].body.str.count(pres2)
-
-    # Add April 2020 to the 2010s decade for simplicity. To be removed eventually ...
-    talks_only.loc[talks_only.date>pandas.to_datetime('2020-01-01', utc=True),
-                   'decade'] = pandas.to_datetime('2015-01-01', utc=True)
 
     speaker_refs = talks_only[['year', 'month', 'decade', 'author_title', 'author',
                                'word_count', 'President', 'not_president']]
