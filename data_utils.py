@@ -291,7 +291,7 @@ def get_scripture_refs(all_data):
     # get rid of short strings (probably footnotes) and long references
 #    ref_df = ref_df[(ref_df['ref'].str.len()>2) & (ref_df['ref'].str.len()<40)]
 
-    ref_df['book'] = ref_df['ref'].str.replace(' [0-9]*\:[-0-9, ]*','').str.strip(' ')
+    ref_df['book'] = ref_df['ref'].str.replace(' [0-9]*\:[-0-9, ]*', '', regex=True).str.strip(' ')
     ref_df['sw'] = ref_df['book'].replace(standard_work_dict)
     return ref_df
 

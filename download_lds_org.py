@@ -49,15 +49,8 @@ for year in range(start_date, end_date):
                     if author_title=='' and author.startswith('President '):
                         author_title = 'President of the Church'
                     body = clean_strings(tree.xpath("//div[@class='body-block']//text()[not(parent::sup)]"))
-                    scripture_refs = clean_strings(tree.xpath("//aside[contains(@class,'sidePanel')]//a//text()"))
-                    all_ref_data = clean_strings(tree.xpath("//aside[contains(@class,'sidePanel')]//p//text()"))
-                    all_refs = []
-                    cur_ref = ''
-                    for ref_str in all_ref_data:
-                        cur_ref += ref_str
-                        if ref_str.endswith('.'):
-                            all_refs.append(cur_ref)
-                            cur_ref = ''
+                    scripture_refs = tree.xpath("//a[@class='scripture-ref']//text()")
+                    all_refs = [x.text_content() for x in tree.xpath("//footer[@class='notes']//li")]
                     json_str = enc.encode({'year':year, 'month':month, 'title':title,
                                            'author':author, 'author_title':author_title, 'body':body,
                                            'references':all_refs, 'scripture_references':scripture_refs})
