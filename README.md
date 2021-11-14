@@ -1,9 +1,12 @@
 # lds-conference-analysis
 
-This repository contains Python code for analyzing historical text of addresses
-given at the twice-yearly general conferences held by the Church of Jesus Christ
-of Latter-day Saints. There is currently an online resource for searching text of
-all talks going back to the 1850s at
+This repository contains Python code for analyzing data associated with the Church
+of Jesus Christ of Latter-day Saints. Mostly this is text analysis of historical
+addresses given at the church's twice-yearly general conferences, but also includes
+analysis of other data sources.
+
+For general conference text, there is currently an online resource for searching
+text of all talks going back to the 1850s at
 [lds-general-conference.org](https://www.lds-general-conference.org/). It is a
 very useful resource, and perhaps the easiest to use for many research projects.
 This Python repository is for those wishing to do more detailed analysis that
