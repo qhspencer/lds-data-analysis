@@ -12,7 +12,8 @@ rsqm = u'\u2019'
 ldqm = u'\u201c'
 rdqm = u'\u201d'
 
-apostle_data_loc = 'data/apostles.json'
+cur_dir = os.path.dirname(__file__)
+apostle_data_loc = cur_dir + '/data/apostles.json'
 
 def replace_vals(string):
     replace_table = {nbsp:' ',
@@ -106,17 +107,18 @@ def load_apostle_data():
     return df
 
 def load_data(source='file'):
-    if source=='file' and os.path.exists('conference_data.pkl'):
-        print('loading conferece_data.pkl')
-        return pandas.read_pickle('conference_data.pkl')
+    pkl_file = cur_dir + '/conference_data.pkl'
+    if source=='file' and os.path.exists(pkl_file):
+        print('loading ' + pkl_file)
+        return pandas.read_pickle(pkl_file)
     if source=='file':
         source = 'all'
         save_file = True
     else:
         save_file = False
     dfs = []
-    byu_edu_list = glob.glob('data_byu_edu/*.json')
-    lds_org_list = glob.glob('data_lds_org/*.json')
+    byu_edu_list = glob.glob(cur_dir + '/data_byu_edu/*.json')
+    lds_org_list = glob.glob(cur_dir + '/data_lds_org/*.json')
     if source=='byu':
         source_list = byu_edu_list
     elif source=='lds':
@@ -200,9 +202,61 @@ def load_data(source='file'):
 
     
     if save_file:
-        df_all.to_pickle('conference_data.pkl')
-        print('wrote conference_data.pkl')
+        df_all.to_pickle(pkl_file)
+        print('wrote ' + pkl_file)
     return df_all
+
+def load_decade_word_counts():
+    '''return a dataframe containing word counts of general conference by decade back to 1850'''
+    return pandas.read_table(cur_dir + '/data/general_counts.txt').set_index('decade')
+
+def get_scripture_word_counts():
+    '''return a dataframe containing word counts for all of the LDS standard works'''
+    # I don't remember the sources for this data. I should find it and cite it eventually.
+    scripture_word_counts = {'Bible (KJV)': 783137,
+                             'Book of Mormon': 267846,
+                             'Doctrine and Covenants': 115658,
+                             'Pearl of Great Price': 28366}
+    return pandas.Series(scripture_word_counts).to_frame('words')
+
+def load_temple_data():
+    '''load a set of data on the temples'''
+    # Load and preprocess data
+    td = pandas.read_csv(cur_dir + '/data/temples.csv')
+
+    ########## data cleanup ###############
+    # clean up column names to be more self-explanatory
+    column_changes = {'Site(ac)': 'site', u'Area(sq\u00A0ft)':'area', 'High(ft)':'height',
+                      'Rms(1)':'ordinance rooms', 'Rms(2)':'sealing rooms',
+                      'Center(3)':"Visitor's center", 'Food(4)':'Cafeteria'}
+    td = td.rename(columns=column_changes)
+
+    #   - get numbers out of the status
+    #   - remove "edit" string that appears at the end of many of the names
+    #   - remove footnotes from various date and related fields
+    footnote_regex = '\[[0-9]*\]'
+    fn = {footnote_regex:''} # the footnote removal dict
+    td = td.replace({'Name': {' *edit$':''},
+                     'Status': {'^[0-9]*':''},
+                     'area': {'TBD':numpy.nan},
+                     'Groundbreaking': {'(No formal groundbreaking|'+footnote_regex+')':''},
+                     'Groundbreakingby': fn,
+                     'Dedication': {'(TBD|'+footnote_regex+')':''},
+                     'Dedicationby': fn,
+                     'Style': fn,
+                     'Designer': fn}, regex=True)
+
+    # import dates into datetime format
+    dt_cols = ['Announcement', 'Groundbreaking', 'Dedication']
+    for col in dt_cols:
+        td[col] = pandas.to_datetime(td[col])
+
+    td['area'] = td['area'].astype(float)
+
+    # Get rid of NaN values in Style
+    td.loc[td['Style'].isna(), 'Style'] = ''
+    return td
+
 
 def get_scripture_refs(all_data):
     # Retrieve from body text using regular expression and create new dataframe
