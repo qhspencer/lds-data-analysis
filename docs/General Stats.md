@@ -1,5 +1,5 @@
 ---
-layout: notebook
+layout: page
 title: General statistics on general conference
 permalink: /general-stats/
 ---
