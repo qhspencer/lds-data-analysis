@@ -1,37 +1,18 @@
 #!/usr/bin/python
 
 import pandas
-import os
 import gc
-import glob
-import json
-import datetime
-import argparse
 from data_utils import *
 import nltk
 import pickle
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as pl
-import matplotlib.dates as mdates
+read_from_disk = True
+ngram_table_file = 'ngram_tables.pkl'
+time_group = 'time_period'
+similarity_threshold = 0.8
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--mpl-style', dest='mpl_style', type=str, default='bmh',
-                    choices=['bmh', 'fivethirtyeight'], help='style package for matplotlib plots')
-parser.add_argument('--output-dir', dest='output_dir', type=str, default='.',
-                    help='path for saving output files')
-parser.add_argument('--time-axis', dest='time_axis', type=str, default='year',
-                    choices=['year', 'conf'], help='specifies spacing of time axis')
-parser.add_argument('--norm', dest='norm', type=str, default='conf',
-                    choices=['words', 'conf'], help='specifies normalization factor')
-args = parser.parse_args()
-
-output_dir = args.output_dir + '/'
 print("Loading data")
-talks_only = get_only_talks(load_data()).copy()
-# There is not yet sufficient data to measure the 2020 decade, so remove it:
-talks_only = talks_only[talks_only['date']<='2020-01-01']
+talk_data = get_only_talks(load_data()).copy()
 gc.collect()
 
 short_words = [
@@ -66,7 +47,7 @@ misc_words = ['twenty', 'thousand', 'simply', 'hundred', 'described', 'area', 'e
 skip_words = short_words + names + misc_words
     
 
-def decade_analysis(dataframe, N, min_length=None, min_total=200):
+def decade_analysis(dataframe, N, min_length=None, min_total=200, time_group='decade'):
 
     if min_length==None:
         min_length = 6+(N-1)*2 if N>1 else 5
@@ -77,25 +58,25 @@ def decade_analysis(dataframe, N, min_length=None, min_total=200):
         col = 'words'
     else:
         print(str(N) + '-gram analysis')
-        df = dataframe[['decade']].join(
+        df = dataframe[[time_group]].join(
             dataframe.words.apply(lambda x: [' '.join(y) for y in
                                              nltk.ngrams(x, N)]).to_frame('Ngrams'))
         col = 'Ngrams'
     vals = df[col].apply(pandas.Series).stack().to_frame('value')
     vals = vals[vals['value'].str.len()>=min_length]
     vals.index = vals.index.get_level_values(0)
-    vals = vals.join(dataframe[['decade']])
+    vals = vals.join(dataframe[[time_group]])
 
-    wc = vals.groupby(['decade', 'value']).size().to_frame('count').reset_index()
+    wc = vals.groupby([time_group, 'value']).size().to_frame('count').reset_index()
     wc = wc[(~wc['value'].isin(skip_words)) &
             (~wc['value'].str.contains('president')) &
             (~wc['value'].str.contains('deseret')) &
             (wc['value'].str.len()>2)]
 
-    dec_table = wc.pivot(index='value', columns='decade', values='count').fillna(0.999)
+    dec_table = wc.pivot(index='value', columns=time_group, values='count').fillna(0.999)
     dec_table['total'] = dec_table.sum(1)
     dec_table = dec_table[dec_table['total']>=min_total]
-    dec_table['max_val'] = dec_table.drop('total', 1).max(1)
+    dec_table['max_val'] = dec_table.drop(columns='total').max(1)
     dec_table['min_val'] = dec_table.min(1)
     dec_table['ratio'] = dec_table['max_val']/dec_table['min_val']
     gc.collect()
@@ -103,27 +84,42 @@ def decade_analysis(dataframe, N, min_length=None, min_total=200):
 
 ###########
 print('processing words')
-talks_only['decade'] = talks_only['year'].dt.year.divide(10).astype(int)*10
+
+# Time groupings version 1: calculate decade
+talk_data['decade'] = talk_data['year'].dt.year.divide(10).astype(int)*10
+
+# Time groupings version 2: divide the time period in 3
+min_date = talk_data['date'].min()
+max_date = talk_data['date'].max()
+threshold1 = min_date + (max_date-min_date)/3
+threshold2 = max_date - (max_date-min_date)/3
+groups = [talk_data['date']<threshold1,
+          (talk_data['date']>=threshold1) & (talk_data['date']<threshold2),
+          talk_data['date']>=threshold2]
+for gr in groups:
+    years = talk_data[gr]['date'].dt.year
+    talk_data.loc[gr, 'time_period'] = '{0:d}-{1:d}'.format(years.min(), years.max())
+
+# ensure we're using the same apostrophe characters in all strings
 replace_list = (("'s ", rsqm+"s "), ("n't ", "n"+rsqm+"t "),
                 ("'ll", rsqm+"ll"), ("'ve", rsqm+"ve"))
-
 for old, new in replace_list:
-    talks_only['body'] = talks_only['body'].str.replace(old, new)
-talks_only['words'] = talks_only.body.str.lower().str.findall(u'[a-z'+rsqm+']+')
+    talk_data['body'] = talk_data['body'].str.replace(old, new)
+talk_data['words'] = talk_data.body.str.lower().str.findall(u'[a-z'+rsqm+']+')
 
-read_from_disk = True
-if not read_from_disk:
+if read_from_disk and os.path.exists(ngram_table_file):
+    print('loading ' + ngram_table_file)
+    ngram_tables = pickle.load(open(ngram_table_file, 'rb'))
+else:
     ngram_tables = []
     for N in range(1, 8):
-        ngram_tables.append(decade_analysis(talks_only, N))
+        ngram_tables.append(decade_analysis(talk_data, N, time_group=time_group))
         gc.collect()
 
-    pickle.dump(ngram_tables, open('ngram_tables.pkl', 'wb'))
-    print('wrote ngram_tables.pkl')
-else:
-    ngram_tables = pickle.load(open('ngram_tables.pkl', 'rb'))
+    pickle.dump(ngram_tables, open(ngram_table_file, 'wb'))
+    print('wrote ' + ngram_table_file)
 
-all_ngrams = pandas.concat(ngram_tables, 0).sort_values('ratio', ascending=False)
+all_ngrams = pandas.concat(ngram_tables, axis=0).sort_values('ratio', ascending=False)
 
 def get_subsets(string):
     ss = string.split(' ')
@@ -166,7 +162,15 @@ for w in endswith_words:
     to_remove.extend(all_ngrams[all_ngrams.index.str.endswith(' ' + w)].index.to_list())
 for ph in subset_phrases:
     to_remove.extend(get_subsets(ph))
+# Add words that are subsets of longer phrases if they have nearly as many usages
+all_ngrams['words'] = all_ngrams.index.str.split(' ').str.len()
+for word, row in all_ngrams.iterrows():
+    if all_ngrams[(all_ngrams['total']>row['total']*similarity_threshold) &
+                  (all_ngrams['words']>row['words'])].index.str.contains(word).sum():
+        to_remove.append(word)
+to_remove = list(set(all_ngrams.index).intersection(set(to_remove)))
+all_ngrams.drop(index=to_remove, inplace=True)
 
-all_ngrams.drop(all_ngrams[all_ngrams.index.isin(to_remove)].index, inplace=True)
-all_ngrams['peak'] = all_ngrams[[x for x in all_ngrams.columns if type(x)==int]].idxmax(axis=1)
-all_ngrams[all_ngrams['ratio']>20].to_pickle('top_ngrams.pkl')
+time_cols = sorted(talk_data[time_group].unique())
+all_ngrams['peak'] = all_ngrams[time_cols].idxmax(axis=1)
+all_ngrams[all_ngrams['ratio']>10].to_pickle('top_ngrams.pkl')

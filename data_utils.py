@@ -133,7 +133,11 @@ def load_data(source='file'):
         dfs.append(pandas.read_json(file))
 
     df_all = pandas.concat(dfs, sort=False).reset_index()
-    df_all.body = df_all.body.map(lambda x: ' '.join(x))
+    # Remove all uppercase strings (used for section headings in some of the
+    # BYU files.
+    bodies = df_all['body'].map(lambda x: ' '.join([y for y in x if not y.isupper()]))
+    df_all['body'] = bodies.str.replace('(?<=\w)\'(?=\w)', rsqm, regex=True) \
+                               .str.replace("s' ", "s"+rsqm+" ", regex=False)
 
     # Create date column
     df_all['date'] = pandas.to_datetime(df_all['month'].map(str) + '/' + df_all['year'].map(str), utc=True)
@@ -534,7 +538,7 @@ def get_context(talk_data, search_string, before=10, after=10):
     return refs.join(talk_data)[['date', 'author', 'ref']]
 
 def top_contexts(talk_data, search_string, before=1, after=1, N=10):
-    word = '[a-z]*'
+    word = '[A-Za-z]*'
     search_string = (word + ' ')*before + search_string + (' ' + word)*after
     matches = talk_data.body.str.lower().str.count(search_string)
     refs = talk_data[matches>0].body.str.lower().str.findall(search_string).apply(pandas.Series).stack().to_frame('ref')
