@@ -522,10 +522,18 @@ def top_users(talk_data, search_string, N=10, before=None, after=None):
     results['fraction'] = results['matches']/results['matches'].sum()
     return results[:N]
 
-def first_users(talk_data, search_string, N=10):
+def first_users(talk_data, search_string, N=10, before=None, after=None):
     matches = talk_data.body.str.count(search_string).to_frame(
         'matches').join(talk_data[['author', 'date']])
     matches = matches[matches['matches']>0]
+    if before!=None:
+        if type(before)==int:
+            before = str(before) + '-12-31'
+        matches = matches[matches['date']<=before]
+    if after!=None:
+        if type(after)==int:
+            after = str(after) + '-01-01'
+        matches = matches[matches['date']>=after]
     matches = matches.sort_values('date').set_index('date')
     matches.index = pandas.DatetimeIndex(matches.index).strftime('%B %Y')
     return matches[:N]
@@ -583,7 +591,7 @@ def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', 
                 spacer,
                 shorten_name(author_counts.idxmax()),
                 author_counts.max()/author_counts.sum()*100)
-        if norm == 'conf':
+        if norm == 'date':
             results[l] = talk_data.assign(matches=matches).groupby(group).sum()['matches']
         else:
             sums = talk_data.assign(matches=matches).groupby(group).sum()
