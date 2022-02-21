@@ -125,7 +125,7 @@ For the rest of this analysis, I will put these 6 different references into two 
 
 The somewhat striking result of aggregating them is that over 80% of all references to heavenly mother actually come in the form of the collective rather than individual reference.
 
-I will also note at this point that I have chosen to following the practice of the overwhelming majority of the authors of the published talks in not capitalizing references to heavenly mother or heavenly parents. There are a few exceptions but they are relatively rare. Whether this particular practice conveys any particular theological meaning is left to the interpretation of the reader.
+I will also note at this point that I have chosen to follow the practice of the overwhelming majority of the authors of the published talks in not capitalizing references to heavenly mother or heavenly parents. There are a few exceptions but they are relatively rare. Whether this particular practice conveys any particular theological meaning is left to the interpretation of the reader.
 
 Using these two aggregate categories, we can look at trends over time. Typically I count references per million words. (One million words is roughly [one decade worth of conference talks](https://qhspencer.github.io/lds-data-analysis/general-stats/).) Given the relatively few total references, I have chosen instead to just count the total references per year in the plot below.
 
@@ -180,7 +180,7 @@ Of the 67 references to heavenly parents occuring in the 2013-2021 time period, 
 
 
 
-There does not appear to be any single talk that is responsible for more than one or two references, so this new surge in references to "heavenly parents" since 2013 appears not be a coincidence, but a conscious effort by some speakers to include this in their talks on a regular basis. The fact that there were a total of 5 references in April and another 4 in October of 2013 after only 1 in all of 2012 has the appearance of some kind of coordinated effort. That coordinated effort could also plausibly include eventual release of a [Gospel Topics essay on the subject of heavenly mother](https://www.churchofjesuschrist.org/study/manual/gospel-topics-essays/mother-in-heaven?lang=eng) in 2015, and an update of the [Young Women's theme](https://www.churchofjesuschrist.org/study/manual/young-women-theme/young-women-theme?lang=eng) to refer to "heavenly parents" in 2019.
+There does not appear to be any single talk that is responsible for more than one or two references, so this new surge in references to "heavenly parents" since 2013 appears not to be a coincidence, but a conscious effort by some speakers to include this in their talks on a regular basis. The fact that there were a total of 5 references in April and another 4 in October of 2013 after only 1 in all of 2012 has the appearance of some kind of coordinated effort. That coordinated effort could also plausibly include eventual release of a [Gospel Topics essay on the subject of heavenly mother](https://www.churchofjesuschrist.org/study/manual/gospel-topics-essays/mother-in-heaven?lang=eng) in 2015, and an update of the [Young Women's theme](https://www.churchofjesuschrist.org/study/manual/young-women-theme/young-women-theme?lang=eng) to refer to "heavenly parents" in 2019.
 
 There are two other noteworthy things that occurred at the time of the April general conference in 2013:
  - a woman gave one of the prayers in a general conference session for the first time, and
