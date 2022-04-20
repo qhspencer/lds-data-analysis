@@ -7,8 +7,9 @@ import nltk
 import pickle
 
 read_from_disk = True
-ngram_table_file = 'ngram_tables.pkl'
-time_group = 'time_period'
+ngram_table_file = 'ngram_tables_60s.pkl'
+top_ngram_file = 'top_ngrams_60s.pkl'
+time_group = 'sixties'
 similarity_threshold = 0.8
 
 print("Loading data")
@@ -100,6 +101,16 @@ for gr in groups:
     years = talk_data[gr]['date'].dt.year
     talk_data.loc[gr, 'time_period'] = '{0:d}-{1:d}'.format(years.min(), years.max())
 
+# Time groupings version 3: 1965-1985
+groups = [talk_data['date']<'1965-01-01',
+          (talk_data['date']>'1965-01-01') & (talk_data['date']<'1975-01-01'),
+          (talk_data['date']>'1975-01-01') & (talk_data['date']<'1985-01-01'),
+          talk_data['date']>'1985-01-01']
+for gr in groups:
+    years = talk_data[gr]['date'].dt.year
+    talk_data.loc[gr, 'sixties'] = '{0:d}-{1:d}'.format(years.min(), years.max())
+print(talk_data['sixties'].drop_duplicates())
+
 # ensure we're using the same apostrophe characters in all strings
 replace_list = (("'s ", rsqm+"s "), ("n't ", "n"+rsqm+"t "),
                 ("'ll", rsqm+"ll"), ("'ve", rsqm+"ve"))
@@ -173,4 +184,4 @@ all_ngrams.drop(index=to_remove, inplace=True)
 
 time_cols = sorted(talk_data[time_group].unique())
 all_ngrams['peak'] = all_ngrams[time_cols].idxmax(axis=1)
-all_ngrams[all_ngrams['ratio']>10].to_pickle('top_ngrams.pkl')
+all_ngrams[all_ngrams['ratio']>10].to_pickle(top_ngram_file)
