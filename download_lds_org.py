@@ -7,6 +7,7 @@ from lxml import html
 import requests
 import re
 import json
+import base64
 import datetime
 from data_utils import *
 
@@ -30,11 +31,16 @@ for year in range(start_date, end_date):
 
             page = requests.get(url)
             tree = html.fromstring(page.content)
-            links = tree.xpath("//a[@class='item-3cCP7']/@href")
-            talks = [l for l in links if '/media' not in l]
+            fullstring = [s for s in tree.xpath('//script//text()') if '__INITIAL_STATE__' in s][0]
+            b64string = fullstring.split('"')[1]
+            json_data = json.loads(base64.b64decode(b64string))
+            session_data = json_data['reader']['bookStore']['/eng/general-conference/2022/04']['entries']
+            talk_lists = [session['section']['entries'] for session in session_data
+                          if 'section' in session.keys()]
+            talk_urls = [talk['content']['uri'] for talks in talk_lists for talk in talks]
 
             out_list = []
-            for t in talks:
+            for t in talk_urls:
                 page = requests.get(url_base + t)
                 page.encoding = 'UTF-8'
                 page_text = page.text.replace(u'\ufeff', '')
