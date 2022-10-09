@@ -34,7 +34,7 @@ for year in range(start_date, end_date):
             fullstring = [s for s in tree.xpath('//script//text()') if '__INITIAL_STATE__' in s][0]
             b64string = fullstring.split('"')[1]
             json_data = json.loads(base64.b64decode(b64string))
-            session_data = json_data['reader']['bookStore']['/eng/general-conference/2022/04']['entries']
+            session_data = json_data['reader']['bookStore'][f'/eng/general-conference/{year}/{month:02}']['entries']
             talk_lists = [session['section']['entries'] for session in session_data
                           if 'section' in session.keys()]
             talk_urls = [talk['content']['uri'] for talks in talk_lists for talk in talks]
