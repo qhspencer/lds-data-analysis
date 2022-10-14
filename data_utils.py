@@ -11,9 +11,11 @@ nbsp = u'\xa0'
 rsqm = u'\u2019'
 ldqm = u'\u201c'
 rdqm = u'\u201d'
+shy = u'\xad'
 
 cur_dir = os.path.dirname(__file__)
 apostle_data_loc = cur_dir + '/data/apostles.json'
+membership_data_loc = cur_dir + '/data/membership_history.csv'
 
 def replace_vals(string):
     replace_table = {nbsp:' ',
@@ -105,6 +107,11 @@ def load_apostle_data():
     date_cols = ['dob', 'dod', 'sdate', 'edate', 'sdate_p', 'edate_p']
     df = pandas.read_json(apostle_data_loc, orient='records', lines=True, convert_dates=date_cols)
     return df
+
+def load_membership_data():
+    mem = pandas.read_csv(membership_data_loc)
+    mem['Membership'] = mem['Membership'].str.replace('(\[.*\]|,)', '', regex=True).astype(int)
+    return mem[['Year', 'Membership']]
 
 def load_data(source='file'):
     pkl_file = cur_dir + '/conference_data.pkl'
@@ -226,13 +233,19 @@ def get_scripture_word_counts():
 def load_temple_data():
     '''load a set of data on the temples'''
     # Load and preprocess data
-    td = pandas.read_csv(cur_dir + '/data/temples.csv')
+    td1 = pandas.read_csv(cur_dir + '/data/temples1.csv', header=[0])
+    td2 = pandas.read_csv(cur_dir + '/data/temples2.csv', header=[0,1])
+    td1.drop(columns=td1.columns[0], inplace=True)
+    td2.drop(columns=td2.columns[0], inplace=True)
+    td2.columns = td2.columns.map(lambda x: ' '.join(x) if x[0]!=x[1] else x[0])
+    td = td1.merge(td2, on=['#', 'Status', 'Name'])
+    td.columns = td.columns.str.replace(shy, '')
 
     ########## data cleanup ###############
     # clean up column names to be more self-explanatory
-    column_changes = {'Site(ac)': 'site', u'Area(sq\u00A0ft)':'area', 'High(ft)':'height',
-                      'Rms(1)':'ordinance rooms', 'Rms(2)':'sealing rooms',
-                      'Center(3)':"Visitor's center", 'Food(4)':'Cafeteria'}
+    column_changes = {'Site': 'site', 'Floor':'area', 'Ht':'height',
+                      'Rm':'ordinance rooms', 'SR':'sealing rooms',
+                      'VC':"Visitor's center"}
     td = td.rename(columns=column_changes)
 
     #   - get numbers out of the status
@@ -240,21 +253,25 @@ def load_temple_data():
     #   - remove footnotes from various date and related fields
     footnote_regex = '\[[0-9]*\]'
     fn = {footnote_regex:''} # the footnote removal dict
-    td = td.replace({'Name': {' *edit$':''},
+    td = td.replace({'Name': {' *[\n]edit$':''},
                      'Status': {'^[0-9]*':''},
-                     'area': {'TBD':numpy.nan},
-                     'Groundbreaking': {'(No formal groundbreaking|'+footnote_regex+')':''},
-                     'Groundbreakingby': fn,
-                     'Dedication': {'(TBD|'+footnote_regex+')':''},
-                     'Dedicationby': fn,
+                     'Groundbreaking date': {'(No formal groundbreaking|'+footnote_regex+')':''},
+                     'Groundbreaking by': fn,
+                     'Dedication date': {'(TBD|'+footnote_regex+')':''},
+                     'Dedication by': fn,
                      'Style': fn,
                      'Designer': fn}, regex=True)
 
+    # If more than one redication, take the first so it will convert into datetime format
+    td['Rededication date'] = td['Rededication date'].str.split('/').str[0]
+
     # import dates into datetime format
-    dt_cols = ['Announcement', 'Groundbreaking', 'Dedication']
+    dt_cols = ['Announcement date', 'Groundbreaking date', 'Dedication date', 'Rededication date']
     for col in dt_cols:
         td[col] = pandas.to_datetime(td[col])
 
+    td['area'] = td['area'].str.replace(nbsp, ' ').str.split(' ').str[0].str.replace(',', '').astype(float)
+    td['site'] = td['site'].str.replace(nbsp, ' ').str.split(' ').str[0].str.replace(',', '').astype(float)
     td['area'] = td['area'].astype(float)
 
     # Get rid of NaN values in Style
