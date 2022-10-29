@@ -14,7 +14,13 @@ The first plot below shows the annual average rate (over both general conference
 
 There are a few things to note. First, it is common for speakers to mention the president of the church in his first general conference, and this is apparent in the plot. Second, it appears that talking about the current president of the church was somewhat less common prior to David O. McKay, but that it stayed relatively consistent for nearly 7 decades from the 1950s through the 2010s, averaging between 0.4 and 0.7 mentions per 1000 words. (For reference, the average talk length is between 1000 and 2000 words during this period). Third, something changed in 2018 when Russell Nelson became president of the church. After mentions of him quickly spiked to an all-time high, they have remained at a level above 1 mention per 1000 words in the 4 years since then, which is nearly double the historical average.
 
-![png]({{ site.baseurl }}/assets/images/2022-01-01-Presidents/2022-01-01-Presidents_5_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2022-10-28-Presidents/2022-10-28-Presidents_5_0.png){: .center-image }
+
+One slightly different metric of interest is the total fraction of speakers who make reference to the current president of the church, which is shown in the plot below. Excluded from this are talks given by the current president of the church, as well as sustaining votes. It's sometimes common for speakers to extend well wishes to the president of the church in some form at the beginning or end of their talks, while mentions in the main body of the talk may be more likely to be either quotes or other references to things he has said or done. In order to determine whether this has an effect on reference rates, one line in the plot was computed using the full text of the talks and the other, labeled "middle of talk", excludes the first and last 5 sentences of a talk. The results don't differ by much in recent times, but there is a pretty notable gap during the presidency of David O. McKay.
+
+![png]({{ site.baseurl }}/assets/images/2022-10-28-Presidents/2022-10-28-Presidents_7_0.png){: .center-image }
+
+One interesting pattern, present in the total references metric, but even more apparent in this fraction of speakers metric, is a decline in the fraction of speakers who mention the president of the church when he is suffering poor health. There have been four church presidents during the observation period who suffered a multi-year period of poor health at the end of their presidencies: McKay, Kimball, Benson, and Monson. All four of those show a decline in this particular metric. This might suggest that the leadership of the church begin mentally move on when a president is perceived to be nearing the end and his counselors are doing most of the work of running the church.
 
 ## Who is talking most about the president of the church?
 After observing the sudden jump in mentioning the president of the church that occurred in 2018, a follow-up question might be: who is doing this the most? To asses this, I looked at all talks by all of the current apostles given during the past 3 presidents of the church. That era begins in 1995 when Gordon B. Hinckley became president. I computed the frequency with which each of the apostles mentioned Hinckley, Monson, and Nelson during their respective presidencies. I also included the all other male speakers, all other female speakers, and the averages over all general conference speakers during those eras.
@@ -24,12 +30,12 @@ Breaking it out this way reveals a significant divergence in who is talking abou
 ## Who changed most under Nelson?
 Given the significant increase in mentions of the church president under Nelson, it's interesting to ask whether certain apostles changed their patterns significantly. Many of them recorded an increase, but the most significant increases are perhaps David Bednar, who went from barely ever mentioning President Monson, to mentioning President Nelson at a rate above the global average, and D. Todd Christofferson, who recorded a similar increase, but at a slightly lower level. Gerritt Gong is a bit of an outlier due to never having mentioned a president of the church previous to Nelson, but he became an apostle under Nelson, and gave only 2 general conference talks previous to that.
 
-![png]({{ site.baseurl }}/assets/images/2022-01-01-Presidents/2022-01-01-Presidents_7_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2022-10-28-Presidents/2022-10-28-Presidents_10_0.png){: .center-image }
 
 ## What about past presidents of the church before they were president?
 Because of the striking change that occurred under Nelson, it is interesting to consider what presidents of the church did when they were not president. The plot below shows how frequently each president of the church going back to David O. McKay mentioned his predecessors before he became president of the church. It may be indicative of future patterns to observe speaking patterns of potential future presidents of the church. For that reason, I have added current heir apparent Dallin H. Oaks, as well as Jeffrey R. Holland. Holland is not the most senior after Oaks, but based on relative ages, seniority, and actuarial tables, he is the most likely president of the church after a future Oaks presidency.
 
-![png]({{ site.baseurl }}/assets/images/2022-01-01-Presidents/2022-01-01-Presidents_10_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2022-10-28-Presidents/2022-10-28-Presidents_13_0.png){: .center-image }
 
 The magnitude of the bars in the plot above is slightly distorted by the presence of two presidents of the church who served for less than a year: Harold B. Lee and Howard W. Hunter. To make patterns easier to observe, those two have been removed in the plot below.
 
@@ -39,7 +45,7 @@ It is also particularly notable that President Nelson made a habit of talking ab
 
 It may be surprising to some to see that Nelson spoke about David O. McKay when he was president of the church, since he was not a general authority before being called an apostle in 1984. In fact, a young Russell Nelson, then a stake president, gave a talk in the priesthood session of general conference in 1969.
 
-![png]({{ site.baseurl }}/assets/images/2022-01-01-Presidents/2022-01-01-Presidents_12_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2022-10-28-Presidents/2022-10-28-Presidents_15_0.png){: .center-image }
 
 ## Conclusion
 So, what happened in 2018? It's clear from the data that during the presidency of Russell M. Nelson there has been a noticeable increase in the rate of general conference speakers mentioning or quoting the president of the church compared to all previous presidencies. There has always been some variation among the apostles in their tendency to do this, but the increase has been observed in nearly all speakers. There could be a variety of possible explanations for this, including how they feel personally about President Nelson and his leadership, or interpersonal dynamics among the apostles. We can observe from past patterns before Nelson became president of the church that he has always spoken of the president of the church with greater frequency than his predecessors, which suggests that he may personally believe this to be important. It also appears that Nelson's most likely successors didn't previously talk about the president of the church with the same frequency, suggesting things could well revert to previous patterns during future presidencies.
