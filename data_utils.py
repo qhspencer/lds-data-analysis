@@ -501,7 +501,7 @@ def get_speaker_refs(df, data=None):
         speaker_refs[key] = talks_only.body.str.count('('+'|'.join(val_list)+')')
 
     col_list = ['Jesus', 'Satan', 'President', 'Joseph'] + list(data.keys())
-    speaker_sum = speaker_refs.groupby('author').sum().drop('not_president', 1)
+    speaker_sum = speaker_refs.groupby('author').sum().drop(columns=['not_president'])
     speaker_sum['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby('author').sum()['word_count']
     speaker_averages = speaker_sum[col_list].divide(speaker_sum['word_count'], 0)*1000
     speaker_averages['President'] = speaker_sum['President']/speaker_sum['word_count_np']*1000

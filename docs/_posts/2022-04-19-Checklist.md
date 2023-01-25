@@ -103,12 +103,12 @@ The top change ratios in this test were some of the checklist phrases already ex
   </thead>
   <tbody>
     <tr>
-      <th>our fellowmen</th>
-      <td>18.0</td>
+      <th>drugs</th>
+      <td>13.30</td>
     </tr>
     <tr>
-      <th>drugs</th>
-      <td>13.3</td>
+      <th>pornography</th>
+      <td>9.75</td>
     </tr>
   </tbody>
 </table>
