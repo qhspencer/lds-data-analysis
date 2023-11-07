@@ -262,11 +262,8 @@ def load_temple_data():
                      'Style': fn,
                      'Designer': fn}, regex=True)
 
-    # If more than one redication, take the first so it will convert into datetime format
-    td['Rededication date'] = td['Rededication date'].str.split('/').str[0]
-
     # import dates into datetime format
-    dt_cols = ['Announcement date', 'Groundbreaking date', 'Dedication date', 'Rededication date']
+    dt_cols = ['Announcement date', 'Groundbreaking date', 'Dedication date']
     for col in dt_cols:
         td[col] = pandas.to_datetime(td[col])
 
