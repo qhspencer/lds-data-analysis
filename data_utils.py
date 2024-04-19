@@ -607,6 +607,8 @@ def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', 
                 author_counts.max()/author_counts.sum()*100)
         if norm == 'date':
             results[l] = talk_data.assign(matches=matches).groupby(group).sum()['matches']
+        elif norm == 'talk':
+            results[l] = talk_data.assign(matches=matches).groupby(group).mean()['matches']
         else:
             sums = talk_data.assign(matches=matches).groupby(group).sum()
             results[l] = sums['matches']/sums['word_count']*1e6
