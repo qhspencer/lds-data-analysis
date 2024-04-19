@@ -126,21 +126,3 @@ Once again, April 2024 represents a new high, with around 85% of speakers mentio
 
 Both of the recent numbers are a pretty striking departure from norms under the McKay presidency, but the change brom Monson to Nelson was in fact bigger than the change from Nelson to Monson, 50 years apart. With largely the same pool of speakers as existed 2008-2017, we see that fully 26% of speakers have been mentioning covenants in their talks now who weren't doing so 7 years ago, and an additional 10% of speakers are now mentioning temples. This suggests, similar to a previous analysis of 
 [quoting the president of the church](https://qhspencer.github.io/lds-data-analysis/presidents), that there may be some specific guidance behind the scenes regarding this.
-
-
-
-<script>
-code_show=true; 
-function code_toggle() {
- if (code_show){
- $('div.input').hide();
- } else {
- $('div.input').show();
- }
- code_show = !code_show
-} 
-$( document ).ready(code_toggle);
-</script>
-<form action="javascript:code_toggle()">
-<input type="submit" value="show/hide source code"></form>
-
