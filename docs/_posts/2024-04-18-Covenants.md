@@ -5,13 +5,9 @@ permalink: /covenants/
 description: analysis of an outlier general conference and how we got here
 ---
 
-
-    <IPython.core.display.Javascript object>
-
-
 One of the more notable features of the April 2024 general conference was the frequent reference to covenants and to temples. The 229 total references to "covenant" was an all-time high, by a significant margin. The 188 references to "temple" was second only to the 191 references in April 1999. The chart below provides some historical context.
 
-![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_4_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_3_0.png){: .center-image }
 
 The numbers 223 and 189, for the April 2024 general conference, works out to an average of 7.2 and 5.9 mentions of each term per talk. To put these numbers in context, the table and chart below shows the incidence of both terms (in average uses per talk): 1950 to 1999, 2000 to 2019, and 2020 to 2023.
 
@@ -70,11 +66,11 @@ The numbers 223 and 189, for the April 2024 general conference, works out to an 
 </div>
 
 
-![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_8_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_7_0.png){: .center-image }
 
 Mentions of the word "covenant" per talk in April 2024 represent a nearly 700% increase over the 50-year baseline period from 1950 to 1999, when the word was used on average 1.1 times per talk. Many of the talks during that era will not have used the word at all. In fact, one striking aspect of the April 2024 conference was the high number of talks that made reference to covenants, sometimes briefly in passing, even when the talk was mainly about some other subject. That pattern suggests the possibility that speakers have been specifically encouraged to mention covenants or temples. To test this possibility, the chart below shows the fraction of all talks mentioning the word covenant, by conference, since 1942.
 
-![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_10_0.png){: .center-image }
+![png]({{ site.baseurl }}/assets/images/2024-04-18-Covenants/2024-04-18-Covenants_9_0.png){: .center-image }
 
 Once again, April 2024 represents a new high, with around 85% of speakers mentioning covenants. However, more striking in this plot is the apparent step change in frequency that began with the presidency of Russell Nelson in 2018. Prior to 2018, the level was already somewhat higher than it had been in the middle decades of the 20th century, there was a gradual increase over time beginning during the Benson and Hinckley presidencies, but there was a pretty dramatic change under Nelson. The table below shows the fraction of talks mentioning temple or covenant under three church presidents: McKay, Monson, and Nelson.
 
