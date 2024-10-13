@@ -45,13 +45,13 @@ for year in range(start_date, end_date):
                 page.encoding = 'UTF-8'
                 page_text = page.text.replace(u'\ufeff', '')
                 tree = html.fromstring(page_text)
-                title = clean_join_strings(tree.xpath("//*[@id='title1' or @id='subtitle1']//text()"))
+                title = clean_join_strings(tree.xpath("//title/text()"))
                 if title!='':
                     # Note: checking some older talks showed the author tags may be different.
                     # Need to check those and update as needed.
-                    author = clean_join_strings(tree.xpath("//*[@class='byline']/*[@id='p1' or @id='author1']/text()"))
+                    author = clean_join_strings(tree.xpath("//*[@class='author-name']/text()"))
                     author = re.sub('By |Presented by ', '', author)
-                    author_title = clean_join_strings(tree.xpath("//*[@class='byline']/*[@id='p2' or @id='author2']/text()"))
+                    author_title = clean_join_strings(tree.xpath("//*[@class='author-role']/text()"))
                     if author_title=='' and author.startswith('President '):
                         author_title = 'President of the Church'
                     body = clean_strings(tree.xpath("//div[@class='body-block']//text()[not(parent::sup)]"))
