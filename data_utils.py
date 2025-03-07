@@ -110,7 +110,7 @@ def load_apostle_data():
 
 def load_membership_data():
     mem = pandas.read_csv(membership_data_loc)
-    mem['Membership'] = mem['Membership'].str.replace('(\[.*\]|,)', '', regex=True).astype(int)
+    mem['Membership'] = mem['Membership'].str.replace(r'(\[.*\]|,)', '', regex=True).astype(int)
     return mem[['Year', 'Membership']]
 
 def load_data(source='file'):
@@ -143,7 +143,7 @@ def load_data(source='file'):
     # Remove all uppercase strings (used for section headings in some of the
     # BYU files.
     bodies = df_all['body'].map(lambda x: ' '.join([y for y in x if not y.isupper()]))
-    df_all['body'] = bodies.str.replace('(?<=\w)\'(?=\w)', rsqm, regex=True) \
+    df_all['body'] = bodies.str.replace(r'(?<=\w)\'(?=\w)', rsqm, regex=True) \
                                .str.replace("s' ", "s"+rsqm+" ", regex=False)
 
     # Create date column
@@ -251,7 +251,7 @@ def load_temple_data():
     #   - get numbers out of the status
     #   - remove "edit" string that appears at the end of many of the names
     #   - remove footnotes from various date and related fields
-    footnote_regex = '\[[0-9]*\]'
+    footnote_regex = r'\[[0-9]*\]'
     fn = {footnote_regex:''} # the footnote removal dict
     td = td.replace({'Name': {' *[\n]edit$':''},
                      'Status': {'^[0-9]*':''},
@@ -281,7 +281,7 @@ def get_scripture_refs(all_data):
     refs = all_data['scripture_references']
     rdf = refs.apply(pandas.Series).stack().to_frame('ref')
     # delete things that don't look like references
-    rdf = rdf[rdf['ref'].str.contains('\:')]
+    rdf = rdf[rdf['ref'].str.contains(r'\:')]
     # replace strings with standardized versions
     replace = {
         'Doctrine and Covenants':'D&C',
@@ -330,7 +330,7 @@ def get_scripture_refs(all_data):
         'Colossians':'Col.',
         'Philippians':'Phil.',
         'Thessalonians':'Thes.',
-        'Philip\.':'Phil.',
+        r'Philip\.':'Phil.',
         'Timothy':'Tim.',
         'Hebrews':'Heb.',
         'Peter':'Pet.',
@@ -363,7 +363,7 @@ def get_scripture_refs(all_data):
     # get rid of short strings (probably footnotes) and long references
 #    ref_df = ref_df[(ref_df['ref'].str.len()>2) & (ref_df['ref'].str.len()<40)]
 
-    ref_df['book'] = ref_df['ref'].str.replace(' [0-9]*\:[-0-9, ]*', '', regex=True).str.strip(' ')
+    ref_df['book'] = ref_df['ref'].str.replace(r' [0-9]*\:[-0-9, ]*', '', regex=True).str.strip(' ')
     ref_df['sw'] = ref_df['book'].replace(standard_work_dict)
     return ref_df
 
@@ -532,7 +532,7 @@ def top_users(talk_data, search_string, N=10, before=None, after=None):
         if type(after)==int:
             after = str(after) + '-01-01'
         matches = matches[matches['date']>=after]
-    results = matches.groupby('author').sum().sort_values('matches', ascending=False)
+    results = matches.groupby('author')[['matches']].sum().sort_values('matches', ascending=False)
     results['fraction'] = results['matches']/results['matches'].sum()
     return results[:N]
 
@@ -606,11 +606,11 @@ def text_search(talk_data, search_data, group='year', norm='words', spacer=' ', 
                 shorten_name(author_counts.idxmax()),
                 author_counts.max()/author_counts.sum()*100)
         if norm == 'date':
-            results[l] = talk_data.assign(matches=matches).groupby(group).sum()['matches']
+            results[l] = talk_data.assign(matches=matches).groupby(group)['matches'].sum()
         elif norm == 'talk':
-            results[l] = talk_data.assign(matches=matches).groupby(group).mean()['matches']
+            results[l] = talk_data.assign(matches=matches).groupby(group)['matches'].mean()
         else:
-            sums = talk_data.assign(matches=matches).groupby(group).sum()
+            sums = talk_data.assign(matches=matches).groupby(group)[['matches', 'word_count']].sum()
             results[l] = sums['matches']/sums['word_count']*1e6
         if 'author analysis' in search.keys() and search['author analysis']=='true':
             author_count = talk_data.join(matches.to_frame('matches')).groupby('author').sum()['matches']
