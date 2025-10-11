@@ -163,7 +163,7 @@ def load_data(source='file'):
     apostle_data = load_apostle_data()
     pres_list = apostle_data[~apostle_data.sdate_p.isna()].reset_index()[['name', 'sdate_p']]
 
-    date_list = pres_list.sdate_p.append(pandas.Series(pandas.to_datetime(datetime.datetime.today(), utc=True)))
+    date_list = pandas.concat([pres_list.sdate_p, pandas.Series(pandas.to_datetime(datetime.datetime.today(), utc=True))])
     cb = pandas.cut(df_all.date, date_list, labels=False)
     cur_pres = pandas.merge(cb.to_frame('p_idx'), pres_list, left_on='p_idx', right_index=True)['name']
     df_all['president'] = cur_pres
@@ -178,7 +178,7 @@ def load_data(source='file'):
     for dt in dates:
         adf = apostle_data[(apostle_data['sdate']<dt+offset) &
                            ((apostle_data['edate']>dt) | (apostle_data['edate'].isna()))]
-        sdict.update({dt: {b:a+1 for a, b in adf.reset_index()['name'].iteritems()}})
+        sdict.update({dt: {b:a+1 for a, b in adf.reset_index()['name'].items()}})
 
     for idx in df_all.index:
         rdict = sdict[df_all.loc[idx, 'date']]
@@ -498,8 +498,8 @@ def get_speaker_refs(df, data=None):
         speaker_refs[key] = talks_only.body.str.count('('+'|'.join(val_list)+')')
 
     col_list = ['Jesus', 'Satan', 'President', 'Joseph'] + list(data.keys())
-    speaker_sum = speaker_refs.groupby('author').sum().drop(columns=['not_president'])
-    speaker_sum['word_count_np'] = speaker_refs[speaker_refs['not_president']].groupby('author').sum()['word_count']
+    speaker_sum = speaker_refs.drop(columns=['not_president', 'decade', 'year', 'month']).groupby('author').sum()
+    speaker_sum['word_count_np'] = speaker_refs[speaker_refs['not_president']][['word_count', 'author']].groupby('author').sum()
     speaker_averages = speaker_sum[col_list].divide(speaker_sum['word_count'], 0)*1000
     speaker_averages['President'] = speaker_sum['President']/speaker_sum['word_count_np']*1000
 
