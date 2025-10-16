@@ -235,10 +235,13 @@ def load_temple_data():
     # Load and preprocess data
     td1 = pandas.read_csv(cur_dir + '/data/temples1.csv', header=[0])
     td2 = pandas.read_csv(cur_dir + '/data/temples2.csv', header=[0,1])
+    #header_rows = td2_.iloc[:2].fillna(method="ffill", axis=1)
+    #td2 = td2_.iloc[2:]
+    #td2.columns = pd.MultiIndex.from_arrays(header_rows.values)
     td1.drop(columns=td1.columns[0], inplace=True)
     td2.drop(columns=td2.columns[0], inplace=True)
     td2.columns = td2.columns.map(lambda x: ' '.join(x) if x[0]!=x[1] else x[0])
-    td = td1.merge(td2, on=['#', 'Status', 'Name'])
+    td = td1.merge(td2, on=['#', 'Status', 'Name'], how='right')
     td.columns = td.columns.str.replace(shy, '')
 
     ########## data cleanup ###############
@@ -262,10 +265,14 @@ def load_temple_data():
                      'Style': fn,
                      'Designer': fn}, regex=True)
 
+    # Sometimes the strings have edit links
+    cleanup_idx = td['Name'].str.endswith(' (edit)')
+    td.loc[cleanup_idx, 'Name'] = td.loc[cleanup_idx, 'Name'].str[:-7]
+
     # import dates into datetime format
     dt_cols = ['Announcement date', 'Groundbreaking date', 'Dedication date']
     for col in dt_cols:
-        td[col] = pandas.to_datetime(td[col])
+        td[col] = pandas.to_datetime(td[col], format='mixed')
 
     td['area'] = td['area'].str.replace(nbsp, ' ').str.split(' ').str[0].str.replace(',', '').astype(float)
     td['site'] = td['site'].str.replace(nbsp, ' ').str.split(' ').str[0].str.replace(',', '').astype(float)
